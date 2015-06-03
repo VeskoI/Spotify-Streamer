@@ -9,9 +9,15 @@ import android.widget.Toast;
 
 import com.vesko.android.spotifystreamer.adapters.TracksAdapter;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 import kaaes.spotify.webapi.android.models.Tracks;
 
 public class TopTracksActivity extends GenericActivity {
+
+    private static final String PARAM_COUNTRY = "country";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -38,14 +44,14 @@ public class TopTracksActivity extends GenericActivity {
 
         @Override
         protected Tracks doInBackground(String... params) {
-            return spotify.getArtistTopTrack(params[0]);
+            Map<String, Object> queryParams = new HashMap<>();
+            queryParams.put(PARAM_COUNTRY, getCountryCode());
+            return spotify.getArtistTopTrack(params[0], queryParams);
         }
 
         @Override
         protected void onPostExecute(Tracks tracks) {
             super.onPostExecute(tracks);
-
-            Log.d("vesko", "total: " + tracks.tracks.size());
 
             boolean resultsFound = tracks.tracks.size() > 0;
 
@@ -61,5 +67,12 @@ public class TopTracksActivity extends GenericActivity {
         TracksAdapter tracksAdapter = new TracksAdapter(TopTracksActivity.this, -1, tracks.tracks);
         ListView tracksList = (ListView) findViewById(R.id.listview_top_tracks);
         tracksList.setAdapter(tracksAdapter);
+    }
+
+    /**
+     * @return 2-letter (ISO 3166-1 alpha-2) country code based on the current user settings.
+     */
+    private String getCountryCode() {
+        return Locale.getDefault().getCountry();
     }
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest package="com.vesko.android.spotifystreamer"
-          xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest
+    package="com.vesko.android.spotifystreamer"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -21,7 +22,8 @@
 
         <activity
             android:name=".TopTracksActivity"
-            android:label="@string/top_tracks"/>
+            android:label="@string/top_tracks"
+            android:parentActivityName=".MainActivity"/>
     </application>
 
 </manifest>
