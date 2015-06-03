@@ -1,14 +1,13 @@
 package com.vesko.android.spotifystreamer;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.KeyEvent;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -17,33 +16,23 @@ import com.vesko.android.spotifystreamer.adapters.ArtistsAdapter;
 
 import java.util.ArrayList;
 
-import kaaes.spotify.webapi.android.SpotifyApi;
-import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends GenericActivity {
 
     private TextView mNoResultsText;
     private EditText mSearchField;
     private ListView mArtistsList;
     private ArtistsAdapter mArtistsAdapter;
 
-    private SpotifyService spotify;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initSpotify();
         initViews();
-    }
-
-    private void initSpotify() {
-        SpotifyApi api = new SpotifyApi();
-        spotify = api.getService();
     }
 
     private void initViews() {
@@ -52,7 +41,10 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    searchForArtist(mSearchField.getText().toString());
+                    String searchText = mSearchField.getText().toString().trim();
+                    if (!TextUtils.isEmpty(searchText)) {
+                        searchForArtist(searchText);
+                    }
                     return true;
                 }
 
@@ -64,28 +56,16 @@ public class MainActivity extends ActionBarActivity {
         mArtistsAdapter = new ArtistsAdapter(this, -1, new ArrayList<Artist>());
         mArtistsList = (ListView) findViewById(R.id.listview_artists);
         mArtistsList.setAdapter(mArtistsAdapter);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        mArtistsList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Artist artist = mArtistsAdapter.getItem(position);
+                Intent i = new Intent(MainActivity.this, TopTracksActivity.class);
+                i.putExtra(Extras.ARTIST_ID, artist.id);
+                i.putExtra(Extras.ARTIST_NAME, artist.name);
+                startActivity(i);
+            }
+        });
     }
 
     private void searchForArtist(String name) {
@@ -102,8 +82,6 @@ public class MainActivity extends ActionBarActivity {
         @Override
         protected void onPostExecute(ArtistsPager artistsPager) {
             super.onPostExecute(artistsPager);
-
-            Log.d("vesko", "total: " + artistsPager.artists.total + ", old-fashioned: " + artistsPager.artists.items.size());
 
             boolean resultsFound = artistsPager.artists.total > 0;
 

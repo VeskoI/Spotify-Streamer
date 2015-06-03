@@ -14,11 +14,11 @@ import com.vesko.android.spotifystreamer.R;
 
 import java.util.List;
 
-import kaaes.spotify.webapi.android.models.Artist;
+import kaaes.spotify.webapi.android.models.Track;
 
-public class ArtistsAdapter extends ArrayAdapter<Artist> {
+public class TracksAdapter extends ArrayAdapter<Track> {
 
-    public ArtistsAdapter(Context context, int resource, List<Artist> objects) {
+    public TracksAdapter(Context context, int resource, List<Track> objects) {
         super(context, resource, objects);
     }
 
@@ -34,17 +34,17 @@ public class ArtistsAdapter extends ArrayAdapter<Artist> {
         }
 
         Tag tag = (Tag) convertView.getTag();
-        Artist artist = getItem(position);
+        Track track = getItem(position);
 
-        setArtistIcon(tag, artist);
-        tag.textLine1.setText(artist.name);
-        tag.textLine2.setVisibility(View.GONE); // not used in Artists list at all
+        setTrackIcon(tag, track);
+        tag.textLine1.setText(track.name);
+        tag.textLine2.setText(track.album.name);
 
         return convertView;
     }
 
-    private void setArtistIcon(Tag tag, Artist artist) {
-        String imageUrl = getMainImageUrl(artist);
+    private void setTrackIcon(Tag tag, Track track) {
+        String imageUrl = getMainImageUrl(track);
         if (TextUtils.isEmpty(imageUrl)) {
             tag.icon.setImageResource(R.mipmap.ic_launcher);
         } else {
@@ -53,9 +53,9 @@ public class ArtistsAdapter extends ArrayAdapter<Artist> {
     }
 
     @Nullable
-    private String getMainImageUrl(Artist artist) {
-        if (artist.images.size() > 0) {
-            return artist.images.get(0).url;
+    private String getMainImageUrl(Track track) {
+        if (track.album.images.size() > 0) {
+            return track.album.images.get(0).url;
         }
         return null;
     }
