@@ -13,7 +13,7 @@
         android:id="@+id/search_field_artist"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Artist to search for"
+        android:hint="@string/artists_search_field_hint"
         android:imeOptions="actionDone"
         android:singleLine="true"/>
 
@@ -21,12 +21,5 @@
         android:id="@+id/listview_artists"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
-
-    <TextView
-        android:id="@+id/textview_no_artists_found"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sorry, no results found!"
-        android:visibility="gone"/>
 
 </LinearLayout>

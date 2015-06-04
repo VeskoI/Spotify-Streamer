@@ -11,6 +11,7 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.vesko.android.spotifystreamer.adapters.ArtistsAdapter;
 
@@ -22,7 +23,6 @@ import kaaes.spotify.webapi.android.models.ArtistsPager;
 
 public class MainActivity extends GenericActivity {
 
-    private TextView mNoResultsText;
     private EditText mSearchField;
     private ListView mArtistsList;
     private ArtistsAdapter mArtistsAdapter;
@@ -51,7 +51,6 @@ public class MainActivity extends GenericActivity {
                 return false;
             }
         });
-        mNoResultsText = (TextView) findViewById(R.id.textview_no_artists_found);
 
         mArtistsAdapter = new ArtistsAdapter(this, -1, new ArrayList<Artist>());
         mArtistsList = (ListView) findViewById(R.id.listview_artists);
@@ -85,12 +84,11 @@ public class MainActivity extends GenericActivity {
 
             boolean resultsFound = artistsPager.artists.total > 0;
 
-            mArtistsList.setVisibility(resultsFound ? View.VISIBLE : View.GONE);
-            mNoResultsText.setVisibility(resultsFound ? View.GONE : View.VISIBLE);
-
             if (resultsFound) {
                 mArtistsAdapter.clear();
                 mArtistsAdapter.addAll(artistsPager.artists.items);
+            } else {
+                Toast.makeText(MainActivity.this, getString(R.string.artist_not_found_error), Toast.LENGTH_SHORT).show();
             }
         }
     }
