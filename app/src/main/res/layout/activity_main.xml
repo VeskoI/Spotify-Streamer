@@ -11,7 +11,7 @@
 
     <EditText
         android:id="@+id/search_field_artist"
-        android:layout_width="wrap_content"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:hint="@string/artists_search_field_hint"
         android:imeOptions="actionDone"
