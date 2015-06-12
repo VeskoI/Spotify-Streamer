@@ -18,7 +18,7 @@ public class ArtistsAdapter extends GenericSpotifyAdapter<Artist> {
         super(context, resource, objects);
     }
 
-    @Override
+     @Override
     public void setItemViews(GenericSpotifyAdapter<Artist>.Tag tag, Artist item) {
         tag.textLine1.setText(item.name);
         tag.textLine2.setVisibility(View.GONE); // not used in Artists list at all
