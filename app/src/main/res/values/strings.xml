@@ -8,4 +8,6 @@
     <string name="artists_search_field_hint">Artist to search for</string>
     <string name="artist_not_found_error">Artist not found, please try again!</string>
     <string name="description_artist_icon">Photo of this artist or group</string>
+    <string name="title_activity_player">PlayerActivity</string>
+    <string name="content_description_album_artwork">Album Artwork</string>
 </resources>

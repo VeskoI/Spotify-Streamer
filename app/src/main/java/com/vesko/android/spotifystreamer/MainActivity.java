@@ -33,6 +33,10 @@ public class MainActivity extends GenericActivity {
         setContentView(R.layout.activity_main);
 
         initViews();
+
+        if (BuildConfig.DEBUG) {
+            searchForArtist("dre");
+        }
     }
 
     private void initViews() {
