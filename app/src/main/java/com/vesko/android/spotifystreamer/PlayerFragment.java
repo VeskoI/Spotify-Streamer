@@ -220,7 +220,7 @@ public class PlayerFragment extends DialogFragment {
                 return;
             }
 
-            int trackProgress = mPlayerService.getSongProgress();]
+            int trackProgress = mPlayerService.getSongProgress();
             int totalDuration = mPlayerService.getSongDuration();
 
             mSeekBar.setMax(totalDuration);
