@@ -6,8 +6,6 @@ import android.view.MenuItem;
 
 public class TopTracksActivity extends GenericActivity {
 
-
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,6 +21,12 @@ public class TopTracksActivity extends GenericActivity {
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setSubtitle(artistName);
+        }
+
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction()
+                    .add(R.id.top_tracks_container, TopTracksFragment.get(artistId), TopTracksFragment.FRAGMENT_TAG)
+                    .commit();
         }
     }
 

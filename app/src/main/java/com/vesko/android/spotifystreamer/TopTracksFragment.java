@@ -4,6 +4,7 @@ package com.vesko.android.spotifystreamer;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,11 +27,20 @@ import kaaes.spotify.webapi.android.models.Tracks;
 
 public class TopTracksFragment extends GenericFragment {
 
+    public static final String FRAGMENT_TAG = "ttft";
     private static final String PARAM_COUNTRY = "country";
 
     private ArrayList<Song> mSongs = new ArrayList<>();
     private ListView mList;
     private SongsAdapter mAdapter;
+
+    public static TopTracksFragment get(String artistId) {
+        TopTracksFragment fragment = new TopTracksFragment();
+        Bundle args = new Bundle();
+        args.putString(Extras.ARTIST_ID, artistId);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     public TopTracksFragment() {
         // Required empty public constructor
@@ -43,9 +53,11 @@ public class TopTracksFragment extends GenericFragment {
 
         mList = (ListView) root.findViewById(R.id.listview_top_tracks);
 
-        String artistId = getActivity().getIntent().getStringExtra(Extras.ARTIST_ID);
-        Log.d("vesko", "topTracksFragment, artistId: " + artistId);
-        new GetTopTracksAsyncTask().execute(artistId);
+        String artistId = getArguments().getString(Extras.ARTIST_ID);
+
+        if (!TextUtils.isEmpty(artistId)) {
+            new GetTopTracksAsyncTask().execute(artistId);
+        }
 
         return root;
     }
@@ -82,7 +94,9 @@ public class TopTracksFragment extends GenericFragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Song song = mAdapter.getItem(position);
-                Log.d(PlayerService.LOG_TAG, song.getName() + ", previewUrl: " + song.getPreviewUrl() + ", position: " + position + ", id: " + id + ", mSongsName: " + mSongs.get(position).getName());
+                Log.d("vesko", song.getName() + ", previewUrl: " + song.getPreviewUrl() + ", position: " + position + ", id: " + id + ", mSongsName: " + mSongs.get(position).getName());
+
+                // TODO start activity or dialogFragment.show(). Needs activity callsbacks similar to SearchFragment
                 Intent i = new Intent(getActivity(), PlayerActivity.class);
                 i.putParcelableArrayListExtra(Extras.TRACKS_LIST, mSongs);
                 i.putExtra(Extras.SELECTED_TRACK, position);

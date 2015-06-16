@@ -1,7 +1,6 @@
-<fragment
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/top_tracks_fragment"
-    android:name="com.vesko.android.spotifystreamer.TopTracksFragment"
+    android:id="@+id/top_tracks_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     />

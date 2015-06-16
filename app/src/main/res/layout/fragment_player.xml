@@ -1,0 +1,87 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:gravity="center_horizontal"
+              android:orientation="vertical"
+              tools:context="com.vesko.android.spotifystreamer.PlayerActivity">
+
+    <TextView
+        android:id="@+id/player_artist_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Coldplay"/>
+
+    <TextView
+        android:id="@+id/player_album_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Coldplay"/>
+
+    <ImageView
+        android:id="@+id/player_album_artwork"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/content_description_album_artwork"
+        tools:src="@mipmap/ic_launcher"/>
+
+    <TextView
+        android:id="@+id/player_track_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="A Sky Full of Stars"/>
+
+    <SeekBar
+        android:id="@+id/player_track_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/player_track_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:text="@string/default_track_progress" />
+
+        <TextView
+            android:id="@+id/player_track_duration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:text="@string/default_track_duration"
+            tools:text="0:30"/>
+
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/player_btn_previous"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_previous"/>
+
+        <ImageButton
+            android:id="@+id/player_btn_play"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:src="@android:drawable/ic_media_play"/>
+
+        <ImageButton
+            android:id="@+id/player_btn_next"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_next"/>
+    </LinearLayout>
+</LinearLayout>

@@ -1,7 +1,7 @@
 package com.vesko.android.spotifystreamer;
 
 
-import android.content.Intent;
+import android.app.Activity;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -30,8 +30,20 @@ public class SearchFragment extends GenericFragment {
     private ListView mArtistsList;
     private ArtistsAdapter mArtistsAdapter;
 
+    private Callback mCallback;
+
     public SearchFragment() {
 
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        if (!(activity instanceof Callback)) {
+            throw new RuntimeException("SearchFragment attached to the wrong Activity!");
+        }
+
+        mCallback = (Callback) activity;
     }
 
     @Override
@@ -64,10 +76,7 @@ public class SearchFragment extends GenericFragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Artist artist = mArtistsAdapter.getItem(position);
-                Intent i = new Intent(getActivity(), TopTracksActivity.class);
-                i.putExtra(Extras.ARTIST_ID, artist.id);
-                i.putExtra(Extras.ARTIST_NAME, artist.name);
-                startActivity(i);
+                mCallback.onItemSelected(artist.id, artist.name);
             }
         });
 
@@ -77,7 +86,6 @@ public class SearchFragment extends GenericFragment {
 
         return root;
     }
-
 
     private void searchForArtist(String name) {
         new SearchForArtistsAsyncTask().execute(name);
@@ -105,5 +113,8 @@ public class SearchFragment extends GenericFragment {
         }
     }
 
+    public interface Callback {
+        void onItemSelected(String artistId, String artistName);
+    }
 
 }
