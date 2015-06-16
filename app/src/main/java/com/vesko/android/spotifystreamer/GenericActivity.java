@@ -5,24 +5,13 @@ import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import kaaes.spotify.webapi.android.SpotifyApi;
-import kaaes.spotify.webapi.android.SpotifyService;
-
 
 public abstract class GenericActivity extends ActionBarActivity {
-
-    protected SpotifyService spotify;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        initSpotify();
-    }
-
-    private void initSpotify() {
-        SpotifyApi api = new SpotifyApi();
-        spotify = api.getService();
     }
 
     @Override

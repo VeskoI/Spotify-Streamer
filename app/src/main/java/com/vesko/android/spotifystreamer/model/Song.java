@@ -1,12 +1,15 @@
 package com.vesko.android.spotifystreamer.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import java.util.List;
 
 import kaaes.spotify.webapi.android.models.ArtistSimple;
 import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Track;
 
-public class Song {
+public class Song implements Parcelable {
 
     String id;
     String name;
@@ -78,5 +81,40 @@ public class Song {
         }
 
         return biggest.url;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(id);
+        dest.writeString(name);
+        dest.writeString(previewUrl);
+        dest.writeString(albumName);
+        dest.writeString(albumPic);
+        dest.writeString(artistName);
+    }
+
+    public static final Parcelable.Creator<Song> CREATOR
+            = new Parcelable.Creator<Song>() {
+        public Song createFromParcel(Parcel in) {
+            return new Song(in);
+        }
+
+        public Song[] newArray(int size) {
+            return new Song[size];
+        }
+    };
+
+    private Song(Parcel in) {
+        id = in.readString();
+        name = in.readString();
+        previewUrl = in.readString();
+        albumName = in.readString();
+        albumPic = in.readString();
+        artistName = in.readString();
     }
 }

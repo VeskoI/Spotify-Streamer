@@ -7,12 +7,19 @@
               android:paddingLeft="@dimen/activity_horizontal_margin"
               android:paddingRight="@dimen/activity_horizontal_margin"
               android:paddingTop="@dimen/activity_vertical_margin"
-              tools:context=".MainActivity">
+              tools:context=".SearchFragment">
 
-    <fragment
-        android:id="@+id/search_fragment"
+    <EditText
+        android:id="@+id/search_field_artist"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/artists_search_field_hint"
+        android:imeOptions="actionDone"
+        android:singleLine="true"/>
+
+    <ListView
+        android:id="@+id/listview_artists"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:name="com.vesko.android.spotifystreamer.SearchFragment"
-        />
+        android:layout_height="match_parent"/>
+
 </LinearLayout>
