@@ -19,7 +19,7 @@ public class MainActivity extends GenericActivity implements SearchFragment.Call
 
             if (savedInstanceState == null) {
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.top_tracks_container, TopTracksFragment.get(null), TopTracksFragment.FRAGMENT_TAG)
+                        .replace(R.id.top_tracks_container, TopTracksFragment.get(null, mTwoPane), TopTracksFragment.FRAGMENT_TAG)
                         .commit();
             }
         }
@@ -29,7 +29,7 @@ public class MainActivity extends GenericActivity implements SearchFragment.Call
     public void onItemSelected(String artistId, String artistName) {
         if (mTwoPane) {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.top_tracks_container, TopTracksFragment.get(artistId), TopTracksFragment.FRAGMENT_TAG)
+                    .replace(R.id.top_tracks_container, TopTracksFragment.get(artistId, mTwoPane), TopTracksFragment.FRAGMENT_TAG)
                     .commit();
         } else {
             Intent i = new Intent(this, TopTracksActivity.class);

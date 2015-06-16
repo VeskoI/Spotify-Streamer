@@ -33,11 +33,13 @@ public class TopTracksFragment extends GenericFragment {
     private ArrayList<Song> mSongs = new ArrayList<>();
     private ListView mList;
     private SongsAdapter mAdapter;
+    private boolean mTwoPane;
 
-    public static TopTracksFragment get(String artistId) {
+    public static TopTracksFragment get(String artistId, boolean twoPane) {
         TopTracksFragment fragment = new TopTracksFragment();
         Bundle args = new Bundle();
         args.putString(Extras.ARTIST_ID, artistId);
+        args.putBoolean(Extras.TWO_PANE, twoPane);
         fragment.setArguments(args);
         return fragment;
     }
@@ -54,6 +56,7 @@ public class TopTracksFragment extends GenericFragment {
         mList = (ListView) root.findViewById(R.id.listview_top_tracks);
 
         String artistId = getArguments().getString(Extras.ARTIST_ID);
+        mTwoPane = getArguments().getBoolean(Extras.TWO_PANE);
 
         if (!TextUtils.isEmpty(artistId)) {
             new GetTopTracksAsyncTask().execute(artistId);
@@ -96,11 +99,17 @@ public class TopTracksFragment extends GenericFragment {
                 Song song = mAdapter.getItem(position);
                 Log.d("vesko", song.getName() + ", previewUrl: " + song.getPreviewUrl() + ", position: " + position + ", id: " + id + ", mSongsName: " + mSongs.get(position).getName());
 
-                // TODO start activity or dialogFragment.show(). Needs activity callsbacks similar to SearchFragment
-                Intent i = new Intent(getActivity(), PlayerActivity.class);
-                i.putParcelableArrayListExtra(Extras.TRACKS_LIST, mSongs);
-                i.putExtra(Extras.SELECTED_TRACK, position);
-                startActivity(i);
+                if (mTwoPane) {
+                    Log.d("vesko", "twoPane, starting dialogFragment");
+                    PlayerFragment playerFragment = PlayerFragment.get(mSongs, position);
+                    playerFragment.show(getFragmentManager(), PlayerFragment.TAG);
+                } else {
+                    Log.d("vesko", "standard, calling Activity");
+                    Intent i = new Intent(getActivity(), PlayerActivity.class);
+                    i.putParcelableArrayListExtra(Extras.TRACKS_LIST, mSongs);
+                    i.putExtra(Extras.SELECTED_TRACK, position);
+                    startActivity(i);
+                }
             }
         });
     }
@@ -120,5 +129,4 @@ public class TopTracksFragment extends GenericFragment {
     private String getCountryCode() {
         return Locale.getDefault().getCountry();
     }
-
 }

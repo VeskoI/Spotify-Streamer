@@ -28,7 +28,7 @@ public class PlayerActivity extends GenericActivity {
 
         Log.d("vesko", "adding fragment from activity");
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.player_container, PlayerFragment.get(mSongs, mSongIndex), "tag")
+                .replace(R.id.player_container, PlayerFragment.get(mSongs, mSongIndex), PlayerFragment.TAG)
                 .commit();
     }
 }

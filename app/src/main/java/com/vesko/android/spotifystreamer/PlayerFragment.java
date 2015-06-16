@@ -1,5 +1,6 @@
 package com.vesko.android.spotifystreamer;
 
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -9,12 +10,14 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -31,6 +34,8 @@ import butterknife.InjectView;
 import butterknife.OnClick;
 
 public class PlayerFragment extends DialogFragment {
+
+    public static final String TAG = "PlayerFragmentTag";
 
     public static PlayerFragment get(ArrayList<Song> songs, int selectedIndex) {
         PlayerFragment fragment = new PlayerFragment();
@@ -79,6 +84,17 @@ public class PlayerFragment extends DialogFragment {
         getActivity().registerReceiver(playerBroadcastReceiver, new IntentFilter(PlayerService.MUSIC_STATUS_CHANGED));
 
         return root;
+    }
+
+    /**
+     * Called by the system when creating the layout in a dialog.
+     */
+    @NonNull
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        Dialog dialog = super.onCreateDialog(savedInstanceState);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        return dialog;
     }
 
     private void refreshPlayerViews() {
@@ -204,7 +220,7 @@ public class PlayerFragment extends DialogFragment {
                 return;
             }
 
-            int trackProgress = mPlayerService.getSongProgress();
+            int trackProgress = mPlayerService.getSongProgress();]
             int totalDuration = mPlayerService.getSongDuration();
 
             mSeekBar.setMax(totalDuration);

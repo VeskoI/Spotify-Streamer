@@ -25,7 +25,7 @@ public class TopTracksActivity extends GenericActivity {
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.top_tracks_container, TopTracksFragment.get(artistId), TopTracksFragment.FRAGMENT_TAG)
+                    .add(R.id.top_tracks_container, TopTracksFragment.get(artistId, false), TopTracksFragment.FRAGMENT_TAG)
                     .commit();
         }
     }

@@ -7,4 +7,5 @@ public class Extras {
     public static final String SELECTED_TRACK = "selected_track";
     public static final String TRACK_URI = "track_uri";
     public static final String STARTED = "started";
+    public static final String TWO_PANE = "two_pane";
 }

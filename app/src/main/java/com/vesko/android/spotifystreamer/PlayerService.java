@@ -137,6 +137,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public void onDestroy() {
         if (mMediaPlayer != null) {
             mMediaPlayer.release();
+            mState = STATE.NON_INITIALISED;
         }
     }
 
