@@ -6,4 +6,5 @@ public class Extras {
     public static final String TRACKS_LIST = "tracks_list";
     public static final String SELECTED_TRACK = "selected_track";
     public static final String TRACK_URI = "track_uri";
+    public static final String STARTED = "started";
 }

@@ -1,8 +1,10 @@
 package com.vesko.android.spotifystreamer;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
@@ -26,6 +28,7 @@ import butterknife.OnClick;
 
 public class PlayerActivity extends GenericActivity {
 
+    // TODO views for current progress and total duration
     @InjectView(R.id.player_artist_name)TextView mArtistName;
     @InjectView(R.id.player_album_name) TextView mAlbumName;
     @InjectView(R.id.player_album_artwork) ImageView mAlbumPic;
@@ -61,6 +64,8 @@ public class PlayerActivity extends GenericActivity {
         bindMusicService();
 
         refreshPlayerViews();
+
+        registerReceiver(playerBroadcastReceiver, new IntentFilter(PlayerService.MUSIC_STATUS_CHANGED));
     }
 
     private void refreshPlayerViews() {
@@ -83,7 +88,6 @@ public class PlayerActivity extends GenericActivity {
         } else {
             Song song = mSongs.get(mSongIndex);
             mPlayerService.play(song);
-            postSeekbarUpdate();
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
     }
@@ -102,24 +106,19 @@ public class PlayerActivity extends GenericActivity {
         Song song = getOtherSong(forward);
         mPlayerService.play(song);
         refreshPlayerViews();
-        postSeekbarUpdate();
     }
 
     private Song getOtherSong(boolean forward) {
         if (forward) {
             if (mSongIndex == mSongs.size() - 1) {
-                Log.d("vesko", "end, =0");
                 mSongIndex = 0;
             } else {
-                Log.d("vesko", "++");
                 mSongIndex++;
             }
         } else {
             if (mSongIndex == 0) {
-                Log.d("vesko", "start, moving to end");
                 mSongIndex = mSongs.size() - 1;
             } else {
-                Log.d("vesko", "--");
                 mSongIndex--;
             }
         }
@@ -153,6 +152,10 @@ public class PlayerActivity extends GenericActivity {
     protected void onDestroy() {
         super.onDestroy();
 
+        try {
+            unregisterReceiver(playerBroadcastReceiver);
+        } catch (Exception ignored) {}
+
         // TODO serviceConnection keeps leaking
         serviceConnection = null;
     }
@@ -171,12 +174,24 @@ public class PlayerActivity extends GenericActivity {
 
             mSeekBar.setMax(totalDuration);
             mSeekBar.setProgress(trackProgress);
-            postSeekbarUpdate();
-            // TODO stop updates when track has finished
+            postSeekBarUpdate();
         }
     };
 
-    private void postSeekbarUpdate() {
+    private void postSeekBarUpdate() {
         mHandler.postDelayed(updateSeekBarRunnable, ONE_SECOND);
     }
+
+    public BroadcastReceiver playerBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            boolean started = intent.getBooleanExtra(Extras.STARTED, false);
+            if (started) {
+                postSeekBarUpdate();
+            } else {
+                mHandler.removeCallbacks(updateSeekBarRunnable);
+            }
+        }
+
+    };
 }

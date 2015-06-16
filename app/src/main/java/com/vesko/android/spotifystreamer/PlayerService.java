@@ -17,6 +17,7 @@ import java.io.IOException;
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
 
+    public static final String MUSIC_STATUS_CHANGED = "com.vesko.android.spotifystreamer.MUSIC_STATUS_CHANGED";
     public static final String LOG_TAG = PlayerService.class.getSimpleName();
     private static final int NOTIFICATION_ID = 1441;
 
@@ -65,6 +66,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             mMediaPlayer.pause();
             mState = STATE.PAUSED;
             refreshOngoingNotification();
+            sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, false));
         }
     }
 
@@ -120,6 +122,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         log("onCompletion");
         mState = STATE.COMPLETED;
         refreshOngoingNotification();
+        sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, false));
     }
 
     @Override
@@ -133,6 +136,8 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         mMediaPlayer.start();
         mState = STATE.PLAYING;
         refreshOngoingNotification();
+
+        sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, true));
     }
 
     private void initMediaPlayer(Song song) {
