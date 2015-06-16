@@ -28,15 +28,14 @@ import butterknife.OnClick;
 
 public class PlayerActivity extends GenericActivity {
 
-    // TODO views for current progress and total duration
     @InjectView(R.id.player_artist_name)TextView mArtistName;
     @InjectView(R.id.player_album_name) TextView mAlbumName;
     @InjectView(R.id.player_album_artwork) ImageView mAlbumPic;
     @InjectView(R.id.player_track_name) TextView mTrackName;
     @InjectView(R.id.player_btn_play) ImageButton mPlayPauseButton;
-    @InjectView(R.id.player_btn_previous) ImageButton mPreviousButton;
-    @InjectView(R.id.player_btn_next) ImageButton mNextButton;
     @InjectView(R.id.player_track_seekbar) SeekBar mSeekBar;
+    @InjectView(R.id.player_track_progress) TextView mTrackProgress;
+    @InjectView(R.id.player_track_duration) TextView mTrackDuration;
 
     private static final long ONE_SECOND = 1000;
 
@@ -74,6 +73,29 @@ public class PlayerActivity extends GenericActivity {
         mAlbumName.setText(currentSong.getAlbumName());
         mTrackName.setText(currentSong.getName());
         Picasso.with(this).load(currentSong.getAlbumPic()).into(mAlbumPic);
+
+        mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    mPlayerService.seekTo(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        mSeekBar.setProgress(0);
+        mTrackProgress.setText(R.string.default_track_progress);
+        mTrackDuration.setText(R.string.default_track_duration);
     }
 
     @OnClick(R.id.player_btn_play)
@@ -106,6 +128,7 @@ public class PlayerActivity extends GenericActivity {
         Song song = getOtherSong(forward);
         mPlayerService.play(song);
         refreshPlayerViews();
+
     }
 
     private Song getOtherSong(boolean forward) {
@@ -167,13 +190,15 @@ public class PlayerActivity extends GenericActivity {
                 return;
             }
 
-            int totalDuration = mPlayerService.getSongDuration();
             int trackProgress = mPlayerService.getSongProgress();
-
-            Log.d("vesko", "total: " + totalDuration + ", progress:" + trackProgress);
+            int totalDuration = mPlayerService.getSongDuration();
 
             mSeekBar.setMax(totalDuration);
             mSeekBar.setProgress(trackProgress);
+
+            mTrackProgress.setText(Utils.getTimeString(trackProgress));
+            mTrackDuration.setText(Utils.getTimeString(totalDuration));
+
             postSeekBarUpdate();
         }
     };
@@ -186,6 +211,7 @@ public class PlayerActivity extends GenericActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             boolean started = intent.getBooleanExtra(Extras.STARTED, false);
+            mPlayPauseButton.setImageResource(started ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
             if (started) {
                 postSeekBarUpdate();
             } else {

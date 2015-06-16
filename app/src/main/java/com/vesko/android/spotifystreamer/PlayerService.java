@@ -17,8 +17,8 @@ import java.io.IOException;
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
 
-    public static final String MUSIC_STATUS_CHANGED = "com.vesko.android.spotifystreamer.MUSIC_STATUS_CHANGED";
     public static final String LOG_TAG = PlayerService.class.getSimpleName();
+    public static final String MUSIC_STATUS_CHANGED = "com.vesko.android.spotifystreamer.MUSIC_STATUS_CHANGED";
     private static final int NOTIFICATION_ID = 1441;
 
     private final PlayerBinder mBinder = new PlayerBinder();
@@ -68,6 +68,14 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             refreshOngoingNotification();
             sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, false));
         }
+    }
+
+    public void seekTo(int progress) {
+        if (!mState.equals(STATE.PLAYING)) {
+            return;
+        }
+
+        mMediaPlayer.seekTo(progress);
     }
 
     public boolean isPlaying() {
@@ -162,12 +170,6 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
-    public class PlayerBinder extends Binder {
-        PlayerService getService() {
-            return PlayerService.this;
-        }
-    }
-
     private void refreshOngoingNotification() {
         PendingIntent pi = PendingIntent.getActivity(
                 getApplicationContext(), 0,
@@ -196,6 +198,12 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
                 return getString(R.string.music_completed);
             default:
                 return null;
+        }
+    }
+
+    public class PlayerBinder extends Binder {
+        PlayerService getService() {
+            return PlayerService.this;
         }
     }
 }

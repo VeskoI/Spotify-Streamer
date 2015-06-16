@@ -16,4 +16,6 @@
     <string name="music_buffering">Buffering …</string>
     <string name="music_completed">Track finished</string>
     <string name="music_paused">Music paused</string>
+    <string name="default_track_duration">--:--</string>
+    <string name="default_track_progress">00:00</string>
 </resources>
