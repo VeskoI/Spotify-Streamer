@@ -36,7 +36,7 @@
         tools:text="A Sky Full of Stars"/>
 
     <SeekBar
-        android:id="@+id/player_track_duration"
+        android:id="@+id/player_track_seekbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 

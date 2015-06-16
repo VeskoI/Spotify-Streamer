@@ -20,6 +20,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public static final String LOG_TAG = PlayerService.class.getSimpleName();
     private static final int NOTIFICATION_ID = 1441;
 
+    private final PlayerBinder mBinder = new PlayerBinder();
     private MediaPlayer mMediaPlayer;
     private Song mCurrentSong;
     private STATE mState = STATE.NON_INITIALISED;
@@ -59,38 +60,33 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
-    private void startPlayback() {
-        mMediaPlayer.start();
-        mState = STATE.PLAYING;
-        refreshOngoingNotification();
-    }
-
-    private void initMediaPlayer(Song song) {
-        log("initMediaPlayer ...");
-        mMediaPlayer = new MediaPlayer();
-        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mMediaPlayer.setOnPreparedListener(this);
-        mMediaPlayer.setOnCompletionListener(this);
-        mMediaPlayer.setOnErrorListener(this);
-        changeMediaPlayerSource(song);
-    }
-
-    private void changeMediaPlayerSource(Song song) {
-        try {
-            mCurrentSong = song;
-            mMediaPlayer.setDataSource(song.getPreviewUrl());
-            mMediaPlayer.prepareAsync();
-            mState = STATE.PREPARING;
+    public void pause() {
+        if (isPlaying()) {
+            mMediaPlayer.pause();
+            mState = STATE.PAUSED;
             refreshOngoingNotification();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
     public boolean isPlaying() {
         return mState.equals(STATE.PLAYING);
     }
-    private final PlayerBinder mBinder = new PlayerBinder();
+
+    public int getSongDuration() {
+        if (mState.equals(STATE.PLAYING)) {
+            return mMediaPlayer.getDuration();
+        }
+
+        return 0;
+    }
+
+    public int getSongProgress() {
+        if (mState.equals(STATE.PLAYING)) {
+            return mMediaPlayer.getCurrentPosition();
+        }
+
+        return 0;
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -120,25 +116,45 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     @Override
+    public void onCompletion(MediaPlayer mp) {
+        log("onCompletion");
+        mState = STATE.COMPLETED;
+        refreshOngoingNotification();
+    }
+
+    @Override
     public void onDestroy() {
         if (mMediaPlayer != null) {
             mMediaPlayer.release();
         }
     }
 
-    public void pause() {
-        if (isPlaying()) {
-            mMediaPlayer.pause();
-            mState = STATE.PAUSED;
-            refreshOngoingNotification();
-        }
+    private void startPlayback() {
+        mMediaPlayer.start();
+        mState = STATE.PLAYING;
+        refreshOngoingNotification();
     }
 
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-        log("onCompletion");
-        mState = STATE.COMPLETED;
-        refreshOngoingNotification();
+    private void initMediaPlayer(Song song) {
+        log("initMediaPlayer ...");
+        mMediaPlayer = new MediaPlayer();
+        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mMediaPlayer.setOnPreparedListener(this);
+        mMediaPlayer.setOnCompletionListener(this);
+        mMediaPlayer.setOnErrorListener(this);
+        changeMediaPlayerSource(song);
+    }
+
+    private void changeMediaPlayerSource(Song song) {
+        try {
+            mCurrentSong = song;
+            mMediaPlayer.setDataSource(song.getPreviewUrl());
+            mMediaPlayer.prepareAsync();
+            mState = STATE.PREPARING;
+            refreshOngoingNotification();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public class PlayerBinder extends Binder {

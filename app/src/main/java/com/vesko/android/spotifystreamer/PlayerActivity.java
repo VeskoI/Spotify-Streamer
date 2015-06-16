@@ -5,10 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,13 +26,6 @@ import butterknife.OnClick;
 
 public class PlayerActivity extends GenericActivity {
 
-    /*
-    <SeekBar
-        android:id="@+id/player_track_duration"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-     */
-
     @InjectView(R.id.player_artist_name)TextView mArtistName;
     @InjectView(R.id.player_album_name) TextView mAlbumName;
     @InjectView(R.id.player_album_artwork) ImageView mAlbumPic;
@@ -38,9 +33,12 @@ public class PlayerActivity extends GenericActivity {
     @InjectView(R.id.player_btn_play) ImageButton mPlayPauseButton;
     @InjectView(R.id.player_btn_previous) ImageButton mPreviousButton;
     @InjectView(R.id.player_btn_next) ImageButton mNextButton;
+    @InjectView(R.id.player_track_seekbar) SeekBar mSeekBar;
 
-    private PlayerService playerService;
+    private static final long ONE_SECOND = 1000;
 
+    private Handler mHandler = new Handler();
+    private PlayerService mPlayerService;
     private ArrayList<Song> mSongs;
     private int mSongIndex;
 
@@ -75,16 +73,17 @@ public class PlayerActivity extends GenericActivity {
 
     @OnClick(R.id.player_btn_play)
     void handlePlayPauseButton() {
-        if (playerService == null) {
+        if (mPlayerService == null) {
             return;
         }
 
-        if (playerService.isPlaying()) {
-            playerService.pause();
+        if (mPlayerService.isPlaying()) {
+            mPlayerService.pause();
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_play);
         } else {
             Song song = mSongs.get(mSongIndex);
-            playerService.play(song);
+            mPlayerService.play(song);
+            postSeekbarUpdate();
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
     }
@@ -101,8 +100,9 @@ public class PlayerActivity extends GenericActivity {
 
     private void changeTrack(boolean forward) {
         Song song = getOtherSong(forward);
-        playerService.play(song);
+        mPlayerService.play(song);
         refreshPlayerViews();
+        postSeekbarUpdate();
     }
 
     private Song getOtherSong(boolean forward) {
@@ -138,8 +138,8 @@ public class PlayerActivity extends GenericActivity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             PlayerService.PlayerBinder playerBinder = (PlayerService.PlayerBinder) service;
-            playerService = playerBinder.getService();
-            playerService.play(mSongs.get(mSongIndex));
+            mPlayerService = playerBinder.getService();
+            mPlayerService.play(mSongs.get(mSongIndex));
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
 
@@ -155,5 +155,28 @@ public class PlayerActivity extends GenericActivity {
 
         // TODO serviceConnection keeps leaking
         serviceConnection = null;
+    }
+
+    private Runnable updateSeekBarRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mPlayerService == null || mSeekBar == null) {
+                return;
+            }
+
+            int totalDuration = mPlayerService.getSongDuration();
+            int trackProgress = mPlayerService.getSongProgress();
+
+            Log.d("vesko", "total: " + totalDuration + ", progress:" + trackProgress);
+
+            mSeekBar.setMax(totalDuration);
+            mSeekBar.setProgress(trackProgress);
+            postSeekbarUpdate();
+            // TODO stop updates when track has finished
+        }
+    };
+
+    private void postSeekbarUpdate() {
+        mHandler.postDelayed(updateSeekBarRunnable, ONE_SECOND);
     }
 }
