@@ -117,4 +117,10 @@ public class Song implements Parcelable {
         albumPic = in.readString();
         artistName = in.readString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        Song other = (Song) o;
+        return this.id.equals(other.id);
+    }
 }

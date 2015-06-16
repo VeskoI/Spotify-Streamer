@@ -10,17 +10,27 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import com.vesko.android.spotifystreamer.model.Song;
+
 import java.io.IOException;
 
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
-//    public static final String ACTION_PLAY = "play";
-//    public static final String ACTION_PAUSE = "pause";
 
     public static final String LOG_TAG = PlayerService.class.getSimpleName();
+    private static final int NOTIFICATION_ID = 1441;
 
     private MediaPlayer mMediaPlayer;
-    private boolean mLoading = false;
+    private Song mCurrentSong;
+    private STATE mState = STATE.NON_INITIALISED;
+
+    public enum STATE {
+        NON_INITIALISED,
+        PREPARING,
+        PLAYING,
+        PAUSED,
+        COMPLETED,
+    }
 
     public static void log(String message) {
         Log.d(LOG_TAG, message);
@@ -30,80 +40,55 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         log("constructor");
     }
 
-//    @Override
-//    public int onStartCommand(Intent intent, int flags, int startId) {
-//        log("onStartCommand, action: " + intent.getAction());
-//        switch (intent.getAction()) {
-//            case ACTION_PLAY:
-//                String
-//                play(intent);
-//                break;
-//
-//            case ACTION_PAUSE:
-//                if (isPlaying()) {
-//                    mMediaPlayer.pause();
-//                }
-//                break;
-//        }
-//
-//
-//        return START_STICKY;
-//    }
-
-    public void play(String trackUri) {
+    public void play(Song song) {
         if (mMediaPlayer == null) {
-            initMediaPlayer(trackUri);
-        }
-        else if (!mMediaPlayer.isPlaying()) {
-            mMediaPlayer.start();
-        }
-    }
-
-    public void playOtherTrack(String trackUri) {
-        if (mMediaPlayer == null) {
-            initMediaPlayer();
+            initMediaPlayer(song);
         }
 
-        if (mMediaPlayer.isPlaying() || mLoading) {
-            Log.d("vesko", "isPlaying: " + (mMediaPlayer.isPlaying()) + ", mLoading: " + mLoading);
+        if (song.equals(mCurrentSong) && mState.equals(STATE.PAUSED)) {
+            // Same song, just resume it
+            startPlayback();
+        }
+
+        if (!song.equals(mCurrentSong)) {
+            // Play a new song
             mMediaPlayer.stop();
             mMediaPlayer.reset();
-        }
 
-        // TODO crash if we receive another request while the previous is paused ...
-        try {
-            mMediaPlayer.setDataSource(trackUri);
-            mMediaPlayer.prepareAsync();
-            mLoading = true;
-        } catch (IOException e) {
-            e.printStackTrace();
+            changeMediaPlayerSource(song);
         }
-
     }
 
-    private void initMediaPlayer() {
-        initMediaPlayer(null);
+    private void startPlayback() {
+        mMediaPlayer.start();
+        mState = STATE.PLAYING;
+        refreshOngoingNotification();
     }
 
-    private void initMediaPlayer(String url) {
+    private void initMediaPlayer(Song song) {
         log("initMediaPlayer ...");
+        mMediaPlayer = new MediaPlayer();
+        mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mMediaPlayer.setOnPreparedListener(this);
+        mMediaPlayer.setOnCompletionListener(this);
+        mMediaPlayer.setOnErrorListener(this);
+        changeMediaPlayerSource(song);
+    }
+
+    private void changeMediaPlayerSource(Song song) {
         try {
-            mMediaPlayer = new MediaPlayer();
-            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mMediaPlayer.setOnPreparedListener(this);
-            mMediaPlayer.setOnErrorListener(this);
-            if (url != null) {
-                mMediaPlayer.setDataSource(url);
-                mMediaPlayer.prepareAsync();
-                mLoading = true;
-            }
+            mCurrentSong = song;
+            mMediaPlayer.setDataSource(song.getPreviewUrl());
+            mMediaPlayer.prepareAsync();
+            mState = STATE.PREPARING;
+            refreshOngoingNotification();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public boolean isPlaying() {
-        return mMediaPlayer != null && mMediaPlayer.isPlaying();
+        return mState.equals(STATE.PLAYING);
     }
     private final PlayerBinder mBinder = new PlayerBinder();
 
@@ -125,9 +110,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        mLoading = false;
-        mMediaPlayer.start();
-        runAsForeground();
+        startPlayback();
     }
 
     @Override
@@ -146,12 +129,16 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public void pause() {
         if (isPlaying()) {
             mMediaPlayer.pause();
+            mState = STATE.PAUSED;
+            refreshOngoingNotification();
         }
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
         log("onCompletion");
+        mState = STATE.COMPLETED;
+        refreshOngoingNotification();
     }
 
     public class PlayerBinder extends Binder {
@@ -160,20 +147,34 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
-    private void runAsForeground() {
-        String songName;
+    private void refreshOngoingNotification() {
         PendingIntent pi = PendingIntent.getActivity(
-                getApplicationContext(),
-                0,
+                getApplicationContext(), 0,
                 new Intent(getApplicationContext(), PlayerActivity.class),
                 PendingIntent.FLAG_UPDATE_CURRENT);
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext())
-                .setContentTitle("test")
-                .setContentText("test content text")
+                .setContentTitle(getNotificationTitle())
+                .setContentText(mCurrentSong.getArtistName() + " -> " + mCurrentSong.getName())
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setOngoing(true)
                 .setContentIntent(pi);
 
-        startForeground(1441, builder.build());
+        startForeground(NOTIFICATION_ID, builder.build());
+    }
+
+    private String getNotificationTitle() {
+        switch (mState) {
+            case PREPARING:
+                return getString(R.string.music_buffering);
+            case PAUSED:
+                return getString(R.string.music_paused);
+            case PLAYING:
+                return getString(R.string.music_playing);
+            case COMPLETED:
+                return getString(R.string.music_completed);
+            default:
+                return null;
+        }
     }
 }

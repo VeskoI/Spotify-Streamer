@@ -83,8 +83,8 @@ public class PlayerActivity extends GenericActivity {
             playerService.pause();
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_play);
         } else {
-            String trackUri = mSongs.get(mSongIndex).getPreviewUrl();
-            playerService.play(trackUri);
+            Song song = mSongs.get(mSongIndex);
+            playerService.play(song);
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
     }
@@ -100,8 +100,8 @@ public class PlayerActivity extends GenericActivity {
     }
 
     private void changeTrack(boolean forward) {
-        String trackUri = getOtherSong(forward).getPreviewUrl();
-        playerService.playOtherTrack(trackUri);
+        Song song = getOtherSong(forward);
+        playerService.play(song);
         refreshPlayerViews();
     }
 
@@ -139,7 +139,7 @@ public class PlayerActivity extends GenericActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             PlayerService.PlayerBinder playerBinder = (PlayerService.PlayerBinder) service;
             playerService = playerBinder.getService();
-            playerService.play(mSongs.get(mSongIndex).getPreviewUrl());
+            playerService.play(mSongs.get(mSongIndex));
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
 
