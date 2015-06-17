@@ -58,7 +58,7 @@ public class PlayerFragment extends DialogFragment {
     private static final long ONE_SECOND = 1000;
 
     private Handler mHandler = new Handler();
-    private PlayerService mPlayerService;
+    private PlayerService.IPlayerCallbacks mService;
     private ArrayList<Song> mSongs;
     private int mSongIndex;
 
@@ -108,7 +108,7 @@ public class PlayerFragment extends DialogFragment {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    mPlayerService.seekTo(progress);
+                    mService.seekTo(progress);
                 }
             }
 
@@ -130,16 +130,16 @@ public class PlayerFragment extends DialogFragment {
 
     @OnClick(R.id.player_btn_play)
     void handlePlayPauseButton() {
-        if (mPlayerService == null) {
+        if (mService == null) {
             return;
         }
 
-        if (mPlayerService.isPlaying()) {
-            mPlayerService.pause();
+        if (mService.isPlaying()) {
+            mService.pause();
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_play);
         } else {
             Song song = mSongs.get(mSongIndex);
-            mPlayerService.play(song);
+            mService.play(song);
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
     }
@@ -156,7 +156,7 @@ public class PlayerFragment extends DialogFragment {
 
     private void changeTrack(boolean forward) {
         Song song = getOtherSong(forward);
-        mPlayerService.play(song);
+        mService.play(song);
         refreshPlayerViews();
 
     }
@@ -185,13 +185,11 @@ public class PlayerFragment extends DialogFragment {
                 Context.BIND_AUTO_CREATE);
     }
 
-
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            PlayerService.PlayerBinder playerBinder = (PlayerService.PlayerBinder) service;
-            mPlayerService = playerBinder.getService();
-            mPlayerService.play(mSongs.get(mSongIndex));
+            mService = (PlayerService.IPlayerCallbacks) service;
+            mService.play(mSongs.get(mSongIndex));
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
 
@@ -216,12 +214,12 @@ public class PlayerFragment extends DialogFragment {
     private Runnable updateSeekBarRunnable = new Runnable() {
         @Override
         public void run() {
-            if (mPlayerService == null || mSeekBar == null) {
+            if (mService == null || mSeekBar == null) {
                 return;
             }
 
-            int trackProgress = mPlayerService.getSongProgress();
-            int totalDuration = mPlayerService.getSongDuration();
+            int trackProgress = mService.getSongProgress();
+            int totalDuration = mService.getSongDuration();
 
             mSeekBar.setMax(totalDuration);
             mSeekBar.setProgress(trackProgress);

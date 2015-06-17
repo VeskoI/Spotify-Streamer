@@ -14,6 +14,7 @@ import android.widget.RemoteViews;
 import com.vesko.android.spotifystreamer.model.Song;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
@@ -79,68 +80,6 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         return START_STICKY;
     }
 
-    public void play(Song song) {
-        if (mMediaPlayer == null) {
-            initMediaPlayer(song);
-        }
-
-        if (song.equals(mCurrentSong) && mState.equals(STATE.PAUSED)) {
-            // Same song, just resume it
-            startPlayback();
-        }
-
-        if (!song.equals(mCurrentSong)) {
-            // Play a new song
-            mMediaPlayer.stop();
-            mMediaPlayer.reset();
-
-            changeMediaPlayerSource(song);
-        }
-    }
-
-    public void resume() {
-        if (mState.equals(STATE.PAUSED)) {
-            startPlayback();
-        }
-    }
-
-    public void pause() {
-        if (isPlaying()) {
-            mMediaPlayer.pause();
-            mState = STATE.PAUSED;
-            refreshOngoingNotification();
-            sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, false));
-        }
-    }
-
-    public void seekTo(int progress) {
-        if (!mState.equals(STATE.PLAYING)) {
-            return;
-        }
-
-        mMediaPlayer.seekTo(progress);
-    }
-
-    public boolean isPlaying() {
-        return mState.equals(STATE.PLAYING);
-    }
-
-    public int getSongDuration() {
-        if (mState.equals(STATE.PLAYING)) {
-            return mMediaPlayer.getDuration();
-        }
-
-        return 0;
-    }
-
-    public int getSongProgress() {
-        if (mState.equals(STATE.PLAYING)) {
-            return mMediaPlayer.getCurrentPosition();
-        }
-
-        return 0;
-    }
-
     @Override
     public IBinder onBind(Intent intent) {
         log("onBind");
@@ -182,6 +121,68 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             mMediaPlayer.release();
             mState = STATE.NON_INITIALISED;
         }
+    }
+
+    private void play(Song song) {
+        if (mMediaPlayer == null) {
+            initMediaPlayer(song);
+        }
+
+        if (song.equals(mCurrentSong) && mState.equals(STATE.PAUSED)) {
+            // Same song, just resume it
+            startPlayback();
+        }
+
+        if (!song.equals(mCurrentSong)) {
+            // Play a new song
+            mMediaPlayer.stop();
+            mMediaPlayer.reset();
+
+            changeMediaPlayerSource(song);
+        }
+    }
+
+    private void resume() {
+        if (mState.equals(STATE.PAUSED)) {
+            startPlayback();
+        }
+    }
+
+    private void pause() {
+        if (isPlaying()) {
+            mMediaPlayer.pause();
+            mState = STATE.PAUSED;
+            refreshOngoingNotification();
+            sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, false));
+        }
+    }
+
+    private void seekTo(int progress) {
+        if (!mState.equals(STATE.PLAYING)) {
+            return;
+        }
+
+        mMediaPlayer.seekTo(progress);
+    }
+
+    private boolean isPlaying() {
+        return mState.equals(STATE.PLAYING);
+    }
+
+    private int getSongDuration() {
+        if (mState.equals(STATE.PLAYING)) {
+            return mMediaPlayer.getDuration();
+        }
+
+        return 0;
+    }
+
+    private int getSongProgress() {
+        if (mState.equals(STATE.PLAYING)) {
+            return mMediaPlayer.getCurrentPosition();
+        }
+
+        return 0;
     }
 
     private void startPlayback() {
@@ -289,9 +290,53 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
-    public class PlayerBinder extends Binder {
-        PlayerService getService() {
-            return PlayerService.this;
+    private ArrayList<Song> mSongs;
+
+    public class PlayerBinder extends Binder implements IPlayerCallbacks {
+
+        @Override
+        public void setMusic(ArrayList<Song> songs) {
+            mSongs = songs;
         }
+
+        @Override
+        public void play(Song song) {
+            PlayerService.this.play(song);
+        }
+
+        @Override
+        public void pause() {
+            PlayerService.this.pause();
+        }
+
+        @Override
+        public void seekTo(int position) {
+            PlayerService.this.seekTo(position);
+        }
+
+        @Override
+        public boolean isPlaying() {
+            return false;
+        }
+
+        @Override
+        public int getSongProgress() {
+            return PlayerService.this.getSongProgress();
+        }
+
+        @Override
+        public int getSongDuration() {
+            return PlayerService.this.getSongDuration();
+        }
+    }
+
+    public interface IPlayerCallbacks {
+        void setMusic(ArrayList<Song> songs);
+        void play(Song song);
+        void pause();
+        void seekTo(int position);
+        boolean isPlaying();
+        int getSongProgress();
+        int getSongDuration();
     }
 }
