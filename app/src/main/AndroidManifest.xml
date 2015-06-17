@@ -33,6 +33,13 @@
             android:name=".PlayerService"
             android:enabled="true"
             android:exported="false" >
+            <intent-filter>
+                <action android:name="com.vesko.android.spotifystreamer.ACTION_PAUSE" />
+                <action android:name="com.vesko.android.spotifystreamer.ACTION_RESUME" />
+                <action android:name="com.vesko.android.spotifystreamer.ACTION_NEXT" />
+                <action android:name="com.vesko.android.spotifystreamer.ACTION_PREVIOUS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </service>
     </application>
 

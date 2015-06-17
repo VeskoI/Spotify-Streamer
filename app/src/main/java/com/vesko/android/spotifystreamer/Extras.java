@@ -8,4 +8,6 @@ public class Extras {
     public static final String TRACK_URI = "track_uri";
     public static final String STARTED = "started";
     public static final String TWO_PANE = "two_pane";
+    public static final String SONG = "song";
+    public static final String SEEK_POSITION = "seek_position";
 }

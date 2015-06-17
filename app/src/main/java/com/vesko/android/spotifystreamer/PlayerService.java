@@ -9,6 +9,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 import com.vesko.android.spotifystreamer.model.Song;
 
@@ -18,11 +19,24 @@ import java.io.IOException;
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
 
     public static final String LOG_TAG = PlayerService.class.getSimpleName();
+
+    public static final String ACTION_PAUSE = "com.vesko.android.spotifystreamer.ACTION_PAUSE";
+    public static final String ACTION_RESUME = "com.vesko.android.spotifystreamer.ACTION_RESUME";
+    public static final String ACTION_NEXT = "com.vesko.android.spotifystreamer.ACTION_NEXT";
+    public static final String ACTION_PREVIOUS = "com.vesko.android.spotifystreamer.ACTION_PREVIOUS";
+
     public static final String MUSIC_STATUS_CHANGED = "com.vesko.android.spotifystreamer.MUSIC_STATUS_CHANGED";
+
     private static final int NOTIFICATION_ID = 1441;
+
+    private static final int REQUEST_CODE_PAUSE = 2001;
+    private static final int REQUEST_CODE_RESUME = 2002;
+    private static final int REQUEST_CODE_NEXT = 2003;
+    private static final int REQUEST_CODE_PREVIOUS = 2004;
 
     private final PlayerBinder mBinder = new PlayerBinder();
     private MediaPlayer mMediaPlayer;
+    private RemoteViews mRemoteViews;
     private Song mCurrentSong;
     private STATE mState = STATE.NON_INITIALISED;
 
@@ -42,6 +56,29 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         log("constructor");
     }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        switch (intent.getAction()) {
+            case ACTION_RESUME:
+                resume();
+                break;
+
+            case ACTION_PAUSE:
+                pause();
+                break;
+
+            case ACTION_PREVIOUS:
+
+                break;
+
+            case ACTION_NEXT:
+
+                break;
+        }
+
+        return START_STICKY;
+    }
+
     public void play(Song song) {
         if (mMediaPlayer == null) {
             initMediaPlayer(song);
@@ -58,6 +95,12 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             mMediaPlayer.reset();
 
             changeMediaPlayerSource(song);
+        }
+    }
+
+    public void resume() {
+        if (mState.equals(STATE.PAUSED)) {
+            startPlayback();
         }
     }
 
@@ -172,16 +215,60 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     private void refreshOngoingNotification() {
+        if (mRemoteViews == null) {
+            mRemoteViews = new RemoteViews(getPackageName(), R.layout.notification_layout);
+        }
+
+        Intent nextIntent = new Intent(ACTION_NEXT);
+        PendingIntent next = PendingIntent.getService(
+                getApplicationContext(),
+                REQUEST_CODE_NEXT,
+                nextIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        mRemoteViews.setOnClickPendingIntent(R.id.notification_next, next);
+
+        Intent previousIntent = new Intent(ACTION_PREVIOUS);
+        PendingIntent previous = PendingIntent.getService(
+                getApplicationContext(),
+                REQUEST_CODE_PREVIOUS,
+                previousIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        mRemoteViews.setOnClickPendingIntent(R.id.notification_previous, previous);
+
+        if (mState.equals(STATE.PLAYING)) {
+            Intent pauseIntent = new Intent(ACTION_PAUSE);
+            PendingIntent pause = PendingIntent.getService(
+                    getApplicationContext(),
+                    REQUEST_CODE_PAUSE,
+                    pauseIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT);
+            mRemoteViews.setImageViewResource(R.id.notification_play_pause, android.R.drawable.ic_media_pause);
+            mRemoteViews.setOnClickPendingIntent(R.id.notification_play_pause, pause);
+        } else {
+            Intent playIntent = new Intent(ACTION_RESUME);
+            PendingIntent play = PendingIntent.getService(
+                    getApplicationContext(),
+                    REQUEST_CODE_RESUME,
+                    playIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT);
+            mRemoteViews.setImageViewResource(R.id.notification_play_pause, android.R.drawable.ic_media_play);
+            mRemoteViews.setOnClickPendingIntent(R.id.notification_play_pause, play);
+        }
+
+        mRemoteViews.setTextViewText(R.id.notification_title, getNotificationTitle());
+        mRemoteViews.setTextViewText(R.id.notification_text, mCurrentSong.getArtistName() + " -> " + mCurrentSong.getName());
+
         PendingIntent pi = PendingIntent.getActivity(
                 getApplicationContext(), 0,
                 new Intent(getApplicationContext(), PlayerActivity.class),
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext())
-                .setContentTitle(getNotificationTitle())
-                .setContentText(mCurrentSong.getArtistName() + " -> " + mCurrentSong.getName())
+//                .setContentTitle(getNotificationTitle())
+//                .setContentText(mCurrentSong.getArtistName() + " -> " + mCurrentSong.getName())
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setOngoing(true)
+                .setContent(mRemoteViews)
                 .setContentIntent(pi);
 
         startForeground(NOTIFICATION_ID, builder.build());
