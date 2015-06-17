@@ -30,7 +30,6 @@ public class TopTracksFragment extends GenericFragment {
     public static final String FRAGMENT_TAG = "ttft";
     private static final String PARAM_COUNTRY = "country";
 
-    private ArrayList<Song> mSongs = new ArrayList<>();
     private ListView mList;
     private SongsAdapter mAdapter;
     private boolean mTwoPane;
@@ -90,23 +89,23 @@ public class TopTracksFragment extends GenericFragment {
     }
 
     private void populateList(final Tracks tracks) {
-        mSongs = extractSongs(tracks);
-        mAdapter = new SongsAdapter(getActivity(), -1, mSongs);
+        ArrayList<Song> songs = extractSongs(tracks);
+
+        // Save the song list globally in the Application
+        SpotifyStreamerApp.getApp().setSongs(songs);
+
+        mAdapter = new SongsAdapter(getActivity(), -1, songs);
         mList.setAdapter(mAdapter);
         mList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Song song = mAdapter.getItem(position);
-                Log.d("vesko", song.getName() + ", previewUrl: " + song.getPreviewUrl() + ", position: " + position + ", id: " + id + ", mSongsName: " + mSongs.get(position).getName());
-
                 if (mTwoPane) {
                     Log.d("vesko", "twoPane, starting dialogFragment");
-                    PlayerFragment playerFragment = PlayerFragment.get(mSongs, position);
+                    PlayerFragment playerFragment = PlayerFragment.get(position);
                     playerFragment.show(getFragmentManager(), PlayerFragment.TAG);
                 } else {
                     Log.d("vesko", "standard, calling Activity");
                     Intent i = new Intent(getActivity(), PlayerActivity.class);
-                    i.putParcelableArrayListExtra(Extras.TRACKS_LIST, mSongs);
                     i.putExtra(Extras.SELECTED_TRACK, position);
                     startActivity(i);
                 }

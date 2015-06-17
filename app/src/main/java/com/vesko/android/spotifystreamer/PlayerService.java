@@ -14,7 +14,6 @@ import android.widget.RemoteViews;
 import com.vesko.android.spotifystreamer.model.Song;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnCompletionListener {
@@ -26,7 +25,8 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public static final String ACTION_NEXT = "com.vesko.android.spotifystreamer.ACTION_NEXT";
     public static final String ACTION_PREVIOUS = "com.vesko.android.spotifystreamer.ACTION_PREVIOUS";
 
-    public static final String MUSIC_STATUS_CHANGED = "com.vesko.android.spotifystreamer.MUSIC_STATUS_CHANGED";
+    public static final String ACTION_MUSIC_STATUS_CHANGED = "com.vesko.android.spotifystreamer.ACTION_MUSIC_STATUS_CHANGED";
+    public static final String ACTION_MUSIC_PREPARE_STARTED = "com.vesko.android.spotifystreamer.ACTION_MUSIC_PREPARE_STARTED";
 
     private static final int NOTIFICATION_ID = 1441;
 
@@ -38,6 +38,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     private final PlayerBinder mBinder = new PlayerBinder();
     private MediaPlayer mMediaPlayer;
     private RemoteViews mRemoteViews;
+    private int mCurrentIndex;
     private Song mCurrentSong;
     private STATE mState = STATE.NON_INITIALISED;
 
@@ -69,11 +70,11 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
                 break;
 
             case ACTION_PREVIOUS:
-
+                changeTrack(false);
                 break;
 
             case ACTION_NEXT:
-
+                changeTrack(true);
                 break;
         }
 
@@ -112,7 +113,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         log("onCompletion");
         mState = STATE.COMPLETED;
         refreshOngoingNotification();
-        sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, false));
+        notifyMusicStatusChanged(false);
     }
 
     @Override
@@ -123,22 +124,22 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
-    private void play(Song song) {
+    private void play(int songIdx) {
         if (mMediaPlayer == null) {
-            initMediaPlayer(song);
+            initMediaPlayer(songIdx);
         }
 
-        if (song.equals(mCurrentSong) && mState.equals(STATE.PAUSED)) {
+        if (songIdx == mCurrentIndex && mState.equals(STATE.PAUSED)) {
             // Same song, just resume it
             startPlayback();
         }
 
-        if (!song.equals(mCurrentSong)) {
+        if (songIdx != mCurrentIndex) {
             // Play a new song
             mMediaPlayer.stop();
             mMediaPlayer.reset();
 
-            changeMediaPlayerSource(song);
+            changeMediaPlayerSource(songIdx);
         }
     }
 
@@ -153,8 +154,33 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             mMediaPlayer.pause();
             mState = STATE.PAUSED;
             refreshOngoingNotification();
-            sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, false));
+            notifyMusicStatusChanged(false);
         }
+    }
+
+    private void changeTrack(boolean forward) {
+        int otherSong = getOtherSong(forward);
+        play(otherSong);
+    }
+
+    private int getOtherSong(boolean forward) {
+        int otherSong = mCurrentIndex;
+
+        if (forward) {
+            if (mCurrentIndex == SpotifyStreamerApp.getApp().getSongs().size() - 1) {
+                otherSong = 0;
+            } else {
+                otherSong++;
+            }
+        } else {
+            if (mCurrentIndex== 0) {
+                otherSong = SpotifyStreamerApp.getApp().getSongs().size() - 1;
+            } else {
+                otherSong--;
+            }
+        }
+
+        return otherSong;
     }
 
     private void seekTo(int progress) {
@@ -190,25 +216,42 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         mState = STATE.PLAYING;
         refreshOngoingNotification();
 
-        sendBroadcast(new Intent(MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, true));
+        notifyMusicStatusChanged(true);
     }
 
-    private void initMediaPlayer(Song song) {
+    private void notifyMusicStatusChanged(boolean started) {
+        sendBroadcast(
+                new Intent(ACTION_MUSIC_STATUS_CHANGED)
+                        .putExtra(Extras.STARTED, started)
+                        .putExtra(Extras.TRACK_IDX, mCurrentIndex));
+    }
+
+    private void notifyPrepareStarted() {
+        sendBroadcast(
+                new Intent(ACTION_MUSIC_PREPARE_STARTED).putExtra(Extras.TRACK_IDX, mCurrentIndex));
+    }
+
+    private void initMediaPlayer(int songIdx) {
         log("initMediaPlayer ...");
         mMediaPlayer = new MediaPlayer();
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mMediaPlayer.setOnPreparedListener(this);
         mMediaPlayer.setOnCompletionListener(this);
         mMediaPlayer.setOnErrorListener(this);
-        changeMediaPlayerSource(song);
+        changeMediaPlayerSource(songIdx);
     }
 
-    private void changeMediaPlayerSource(Song song) {
+    private void changeMediaPlayerSource(int index) {
         try {
-            mCurrentSong = song;
+            Song song = SpotifyStreamerApp.getApp().getSong(index);
             mMediaPlayer.setDataSource(song.getPreviewUrl());
             mMediaPlayer.prepareAsync();
+
+            mCurrentIndex = index;
+            mCurrentSong = song;
             mState = STATE.PREPARING;
+
+            notifyPrepareStarted();
             refreshOngoingNotification();
         } catch (IOException e) {
             e.printStackTrace();
@@ -265,8 +308,6 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext())
-//                .setContentTitle(getNotificationTitle())
-//                .setContentText(mCurrentSong.getArtistName() + " -> " + mCurrentSong.getName())
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setOngoing(true)
                 .setContent(mRemoteViews)
@@ -290,23 +331,21 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
-    private ArrayList<Song> mSongs;
-
     public class PlayerBinder extends Binder implements IPlayerCallbacks {
 
         @Override
-        public void setMusic(ArrayList<Song> songs) {
-            mSongs = songs;
-        }
-
-        @Override
-        public void play(Song song) {
-            PlayerService.this.play(song);
+        public void play(int songIdx) {
+            PlayerService.this.play(songIdx);
         }
 
         @Override
         public void pause() {
             PlayerService.this.pause();
+        }
+
+        @Override
+        public void changeTrack(boolean forward) {
+            PlayerService.this.changeTrack(forward);
         }
 
         @Override
@@ -316,7 +355,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
         @Override
         public boolean isPlaying() {
-            return false;
+            return PlayerService.this.isPlaying();
         }
 
         @Override
@@ -331,9 +370,9 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     public interface IPlayerCallbacks {
-        void setMusic(ArrayList<Song> songs);
-        void play(Song song);
+        void play(int songIdx);
         void pause();
+        void changeTrack(boolean forward);
         void seekTo(int position);
         boolean isPlaying();
         int getSongProgress();

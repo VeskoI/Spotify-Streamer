@@ -27,8 +27,6 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 import com.vesko.android.spotifystreamer.model.Song;
 
-import java.util.ArrayList;
-
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import butterknife.OnClick;
@@ -37,11 +35,10 @@ public class PlayerFragment extends DialogFragment {
 
     public static final String TAG = "PlayerFragmentTag";
 
-    public static PlayerFragment get(ArrayList<Song> songs, int selectedIndex) {
+    public static PlayerFragment get(int selectedSong) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
-        args.putParcelableArrayList(Extras.TRACKS_LIST, songs);
-        args.putInt(Extras.SELECTED_TRACK, selectedIndex);
+        args.putInt(Extras.SELECTED_TRACK, selectedSong);
         fragment.setArguments(args);
         return fragment;
     }
@@ -59,7 +56,6 @@ public class PlayerFragment extends DialogFragment {
 
     private Handler mHandler = new Handler();
     private PlayerService.IPlayerCallbacks mService;
-    private ArrayList<Song> mSongs;
     private int mSongIndex;
 
     @Nullable
@@ -68,10 +64,9 @@ public class PlayerFragment extends DialogFragment {
         View root = inflater.inflate(R.layout.fragment_player, container, false);
         ButterKnife.inject(this, root);
 
-        mSongs = getArguments().getParcelableArrayList(Extras.TRACKS_LIST);
         mSongIndex = getArguments().getInt(Extras.SELECTED_TRACK, -1);
 
-        if (mSongs == null || mSongs.size() == 0 || mSongIndex == -1) {
+        if (mSongIndex == -1) {
             // Wrong input, nothing to do here
             Toast.makeText(getActivity(), getString(R.string.error_try_again), Toast.LENGTH_SHORT).show();
             return null;
@@ -81,7 +76,10 @@ public class PlayerFragment extends DialogFragment {
 
         refreshPlayerViews();
 
-        getActivity().registerReceiver(playerBroadcastReceiver, new IntentFilter(PlayerService.MUSIC_STATUS_CHANGED));
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(PlayerService.ACTION_MUSIC_STATUS_CHANGED);
+        intentFilter.addAction(PlayerService.ACTION_MUSIC_PREPARE_STARTED);
+        getActivity().registerReceiver(playerBroadcastReceiver, intentFilter);
 
         return root;
     }
@@ -98,7 +96,7 @@ public class PlayerFragment extends DialogFragment {
     }
 
     private void refreshPlayerViews() {
-        Song currentSong = mSongs.get(mSongIndex);
+        Song currentSong = SpotifyStreamerApp.getApp().getSongs().get(mSongIndex);
         mArtistName.setText(currentSong.getArtistName());
         mAlbumName.setText(currentSong.getAlbumName());
         mTrackName.setText(currentSong.getName());
@@ -138,8 +136,7 @@ public class PlayerFragment extends DialogFragment {
             mService.pause();
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_play);
         } else {
-            Song song = mSongs.get(mSongIndex);
-            mService.play(song);
+            mService.play(mSongIndex);
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
     }
@@ -155,27 +152,7 @@ public class PlayerFragment extends DialogFragment {
     }
 
     private void changeTrack(boolean forward) {
-        Song song = getOtherSong(forward);
-        mService.play(song);
-        refreshPlayerViews();
-
-    }
-
-    private Song getOtherSong(boolean forward) {
-        if (forward) {
-            if (mSongIndex == mSongs.size() - 1) {
-                mSongIndex = 0;
-            } else {
-                mSongIndex++;
-            }
-        } else {
-            if (mSongIndex == 0) {
-                mSongIndex = mSongs.size() - 1;
-            } else {
-                mSongIndex--;
-            }
-        }
-        return mSongs.get(mSongIndex);
+        mService.changeTrack(forward);
     }
 
     private void bindMusicService() {
@@ -189,7 +166,7 @@ public class PlayerFragment extends DialogFragment {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mService = (PlayerService.IPlayerCallbacks) service;
-            mService.play(mSongs.get(mSongIndex));
+            mService.play(mSongIndex);
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
 
@@ -239,12 +216,25 @@ public class PlayerFragment extends DialogFragment {
         @Override
         public void onReceive(Context context, Intent intent) {
             boolean started = intent.getBooleanExtra(Extras.STARTED, false);
-            mPlayPauseButton.setImageResource(started ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
-            if (started) {
-                postSeekBarUpdate();
-            } else {
-                mHandler.removeCallbacks(updateSeekBarRunnable);
+            int trackIdx = intent.getIntExtra(Extras.TRACK_IDX, -1);
+
+            if (trackIdx != -1 && trackIdx != mSongIndex) {
+                mSongIndex = trackIdx;
+                refreshPlayerViews();
             }
+
+            switch (intent.getAction()) {
+                case PlayerService.ACTION_MUSIC_STATUS_CHANGED:
+
+                    mPlayPauseButton.setImageResource(started ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
+                    if (started) {
+                        postSeekBarUpdate();
+                    } else {
+                        mHandler.removeCallbacks(updateSeekBarRunnable);
+                    }
+                    break;
+            }
+
         }
 
     };
