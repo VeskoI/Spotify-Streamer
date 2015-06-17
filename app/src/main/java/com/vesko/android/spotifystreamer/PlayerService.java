@@ -1,16 +1,22 @@
 package com.vesko.android.spotifystreamer;
 
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 import com.vesko.android.spotifystreamer.model.Song;
 
 import java.io.IOException;
@@ -37,10 +43,12 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     private final PlayerBinder mBinder = new PlayerBinder();
     private MediaPlayer mMediaPlayer;
-    private RemoteViews mRemoteViews;
     private int mCurrentIndex;
     private Song mCurrentSong;
     private STATE mState = STATE.NON_INITIALISED;
+
+    private RemoteViews mRemoteViews;
+    private Bitmap mNotificationThumb;
 
     public enum STATE {
         NON_INITIALISED,
@@ -118,6 +126,8 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     @Override
     public void onDestroy() {
+        Picasso.with(getApplicationContext()).cancelRequest(mThumbPicassoTarget);
+
         if (mMediaPlayer != null) {
             mMediaPlayer.release();
             mState = STATE.NON_INITIALISED;
@@ -302,6 +312,14 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         mRemoteViews.setTextViewText(R.id.notification_title, getNotificationTitle());
         mRemoteViews.setTextViewText(R.id.notification_text, mCurrentSong.getArtistName() + " -> " + mCurrentSong.getName());
 
+        if (mNotificationThumb != null) {
+            Log.d("vesko", "picasso, thumb is READY");
+            mRemoteViews.setImageViewBitmap(R.id.notification_icon, mNotificationThumb);
+        } else {
+            Log.d("vesko", "picasso, thumb NOT ready, calling load now");
+            Picasso.with(getApplicationContext()).load(mCurrentSong.getAlbumPic()).into(mThumbPicassoTarget);
+        }
+
         PendingIntent pi = PendingIntent.getActivity(
                 getApplicationContext(), 0,
                 new Intent(getApplicationContext(), PlayerActivity.class),
@@ -312,6 +330,10 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
                 .setOngoing(true)
                 .setContent(mRemoteViews)
                 .setContentIntent(pi);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
+        }
 
         startForeground(NOTIFICATION_ID, builder.build());
     }
@@ -368,6 +390,25 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             return PlayerService.this.getSongDuration();
         }
     }
+
+    private Target mThumbPicassoTarget = new Target() {
+        @Override
+        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+            Log.d("vesko", "picasso, LOADED");
+            mNotificationThumb = bitmap;
+            refreshOngoingNotification();
+        }
+
+        @Override
+        public void onBitmapFailed(Drawable errorDrawable) {
+
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+        }
+    };
 
     public interface IPlayerCallbacks {
         void play(int songIdx);
