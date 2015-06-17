@@ -18,4 +18,9 @@
     <string name="music_paused">Music paused</string>
     <string name="default_track_duration">--:--</string>
     <string name="default_track_progress">00:00</string>
+    <string name="pause">Pause</string>
+    <string name="play">Play</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="song_info">%1$s -> %2$s</string>
 </resources>

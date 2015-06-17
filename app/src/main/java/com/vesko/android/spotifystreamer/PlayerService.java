@@ -13,7 +13,6 @@ import android.os.Build;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.widget.RemoteViews;
 
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
@@ -47,7 +46,6 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     private Song mCurrentSong;
     private STATE mState = STATE.NON_INITIALISED;
 
-    private RemoteViews mRemoteViews;
     private Bitmap mNotificationThumb;
 
     public enum STATE {
@@ -257,6 +255,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             mMediaPlayer.setDataSource(song.getPreviewUrl());
             mMediaPlayer.prepareAsync();
 
+            mNotificationThumb = null;
             mCurrentIndex = index;
             mCurrentSong = song;
             mState = STATE.PREPARING;
@@ -269,55 +268,43 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     private void refreshOngoingNotification() {
-        if (mRemoteViews == null) {
-            mRemoteViews = new RemoteViews(getPackageName(), R.layout.notification_layout);
-        }
 
         Intent nextIntent = new Intent(ACTION_NEXT);
-        PendingIntent next = PendingIntent.getService(
+        PendingIntent piNext = PendingIntent.getService(
                 getApplicationContext(),
                 REQUEST_CODE_NEXT,
                 nextIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
-        mRemoteViews.setOnClickPendingIntent(R.id.notification_next, next);
 
         Intent previousIntent = new Intent(ACTION_PREVIOUS);
-        PendingIntent previous = PendingIntent.getService(
+        PendingIntent piPrevious = PendingIntent.getService(
                 getApplicationContext(),
                 REQUEST_CODE_PREVIOUS,
                 previousIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
-        mRemoteViews.setOnClickPendingIntent(R.id.notification_previous, previous);
 
+        Intent playPauseIntent;
+        PendingIntent piPlayPause;
+        int iconRes;
+        String buttonText;
         if (mState.equals(STATE.PLAYING)) {
-            Intent pauseIntent = new Intent(ACTION_PAUSE);
-            PendingIntent pause = PendingIntent.getService(
+            playPauseIntent = new Intent(ACTION_PAUSE);
+            piPlayPause = PendingIntent.getService(
                     getApplicationContext(),
                     REQUEST_CODE_PAUSE,
-                    pauseIntent,
+                    playPauseIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
-            mRemoteViews.setImageViewResource(R.id.notification_play_pause, android.R.drawable.ic_media_pause);
-            mRemoteViews.setOnClickPendingIntent(R.id.notification_play_pause, pause);
+            iconRes = android.R.drawable.ic_media_pause;
+            buttonText = getString(R.string.pause);
         } else {
-            Intent playIntent = new Intent(ACTION_RESUME);
-            PendingIntent play = PendingIntent.getService(
+            playPauseIntent = new Intent(ACTION_RESUME);
+            piPlayPause = PendingIntent.getService(
                     getApplicationContext(),
                     REQUEST_CODE_RESUME,
-                    playIntent,
+                    playPauseIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT);
-            mRemoteViews.setImageViewResource(R.id.notification_play_pause, android.R.drawable.ic_media_play);
-            mRemoteViews.setOnClickPendingIntent(R.id.notification_play_pause, play);
-        }
-
-        mRemoteViews.setTextViewText(R.id.notification_title, getNotificationTitle());
-        mRemoteViews.setTextViewText(R.id.notification_text, mCurrentSong.getArtistName() + " -> " + mCurrentSong.getName());
-
-        if (mNotificationThumb != null) {
-            Log.d("vesko", "picasso, thumb is READY");
-            mRemoteViews.setImageViewBitmap(R.id.notification_icon, mNotificationThumb);
-        } else {
-            Log.d("vesko", "picasso, thumb NOT ready, calling load now");
-            Picasso.with(getApplicationContext()).load(mCurrentSong.getAlbumPic()).into(mThumbPicassoTarget);
+            iconRes = android.R.drawable.ic_media_play;
+            buttonText = getString(R.string.play);
         }
 
         PendingIntent pi = PendingIntent.getActivity(
@@ -327,9 +314,19 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext())
                 .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(getNotificationTitle())
+                .setContentText(getString(R.string.song_info, mCurrentSong.getArtistName(), mCurrentSong.getName()))
+                .addAction(android.R.drawable.ic_media_previous, getString(R.string.previous), piPrevious)
+                .addAction(iconRes, buttonText, piPlayPause)
+                .addAction(android.R.drawable.ic_media_next, getString(R.string.next), piNext)
                 .setOngoing(true)
-                .setContent(mRemoteViews)
                 .setContentIntent(pi);
+
+        if (mNotificationThumb != null) {
+            builder.setLargeIcon(mNotificationThumb);
+        } else {
+            Picasso.with(getApplicationContext()).load(mCurrentSong.getAlbumPic()).into(mThumbPicassoTarget);
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             builder.setVisibility(Notification.VISIBILITY_PUBLIC);
@@ -394,7 +391,6 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     private Target mThumbPicassoTarget = new Target() {
         @Override
         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-            Log.d("vesko", "picasso, LOADED");
             mNotificationThumb = bitmap;
             refreshOngoingNotification();
         }
