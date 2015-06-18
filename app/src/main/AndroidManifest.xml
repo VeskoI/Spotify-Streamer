@@ -35,6 +35,7 @@
             android:enabled="true"
             android:exported="false">
             <intent-filter>
+                <action android:name="com.vesko.android.spotifystreamer.ACTION_PLAY"/>
                 <action android:name="com.vesko.android.spotifystreamer.ACTION_PAUSE"/>
                 <action android:name="com.vesko.android.spotifystreamer.ACTION_RESUME"/>
                 <action android:name="com.vesko.android.spotifystreamer.ACTION_NEXT"/>

@@ -13,7 +13,6 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,12 +34,8 @@ public class PlayerFragment extends DialogFragment {
 
     public static final String TAG = "PlayerFragmentTag";
 
-    public static PlayerFragment get(int selectedSong) {
-        PlayerFragment fragment = new PlayerFragment();
-        Bundle args = new Bundle();
-        args.putInt(Extras.SELECTED_TRACK, selectedSong);
-        fragment.setArguments(args);
-        return fragment;
+    public static PlayerFragment get() {
+        return new PlayerFragment();
     }
 
     @InjectView(R.id.player_artist_name)TextView mArtistName;
@@ -56,7 +51,6 @@ public class PlayerFragment extends DialogFragment {
 
     private Handler mHandler = new Handler();
     private PlayerService.IPlayerCallbacks mService;
-    private int mSongIndex;
 
     @Nullable
     @Override
@@ -64,15 +58,15 @@ public class PlayerFragment extends DialogFragment {
         View root = inflater.inflate(R.layout.fragment_player, container, false);
         ButterKnife.inject(this, root);
 
-        mSongIndex = getArguments().getInt(Extras.SELECTED_TRACK, -1);
-
-        if (mSongIndex == -1) {
+        if (SpotifyStreamerApp.getApp().getCurrentSongIdx() == -1) {
             // Wrong input, nothing to do here
             Toast.makeText(getActivity(), getString(R.string.error_try_again), Toast.LENGTH_SHORT).show();
             return null;
         }
 
-        bindMusicService();
+        // startService() will make sure it'll run beyong the lifecycle of the Fragment/Activity
+        getActivity().startService(
+                new Intent(getActivity(), PlayerService.class).setAction(PlayerService.ACTION_PLAY));
 
         refreshPlayerViews();
 
@@ -82,6 +76,26 @@ public class PlayerFragment extends DialogFragment {
         getActivity().registerReceiver(playerBroadcastReceiver, intentFilter);
 
         return root;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        getActivity().bindService(
+                new Intent(getActivity(), PlayerService.class),
+                serviceConnection,
+                Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        mHandler.removeCallbacks(updateSeekBarRunnable);
+
+        getActivity().unbindService(serviceConnection);
+        serviceConnection = null;
     }
 
     /**
@@ -96,7 +110,7 @@ public class PlayerFragment extends DialogFragment {
     }
 
     private void refreshPlayerViews() {
-        Song currentSong = SpotifyStreamerApp.getApp().getSongs().get(mSongIndex);
+        Song currentSong = SpotifyStreamerApp.getApp().getCurrentSong();
         mArtistName.setText(currentSong.getArtistName());
         mAlbumName.setText(currentSong.getAlbumName());
         mTrackName.setText(currentSong.getName());
@@ -136,7 +150,7 @@ public class PlayerFragment extends DialogFragment {
             mService.pause();
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_play);
         } else {
-            mService.play(mSongIndex);
+            mService.play(SpotifyStreamerApp.getApp().getCurrentSongIdx());
             mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
         }
     }
@@ -155,24 +169,20 @@ public class PlayerFragment extends DialogFragment {
         mService.changeTrack(forward);
     }
 
-    private void bindMusicService() {
-        getActivity().bindService(
-                new Intent(getActivity(), PlayerService.class),
-                serviceConnection,
-                Context.BIND_AUTO_CREATE);
-    }
-
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mService = (PlayerService.IPlayerCallbacks) service;
-            mService.play(mSongIndex);
-            mPlayPauseButton.setImageResource(android.R.drawable.ic_media_pause);
+
+            if (mService.isPlaying()) {
+                // Someone, somewhere has already started music ... make sure that our UI is up-to-date
+                refreshUiAfterMusicUpdate(true);
+            }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d("vesko", "Activity, onServiceDisconnected");
+
         }
     };
 
@@ -185,7 +195,6 @@ public class PlayerFragment extends DialogFragment {
         } catch (Exception ignored) {}
 
         // TODO serviceConnection keeps leaking
-        serviceConnection = null;
     }
 
     private Runnable updateSeekBarRunnable = new Runnable() {
@@ -212,30 +221,29 @@ public class PlayerFragment extends DialogFragment {
         mHandler.postDelayed(updateSeekBarRunnable, ONE_SECOND);
     }
 
-    public BroadcastReceiver playerBroadcastReceiver = new BroadcastReceiver() {
+    private BroadcastReceiver playerBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            boolean started = intent.getBooleanExtra(Extras.STARTED, false);
-            int trackIdx = intent.getIntExtra(Extras.TRACK_IDX, -1);
+            refreshPlayerViews();
 
-            if (trackIdx != -1 && trackIdx != mSongIndex) {
-                mSongIndex = trackIdx;
-                refreshPlayerViews();
-            }
+            boolean started = intent.getBooleanExtra(Extras.STARTED, false);
 
             switch (intent.getAction()) {
                 case PlayerService.ACTION_MUSIC_STATUS_CHANGED:
-
-                    mPlayPauseButton.setImageResource(started ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
-                    if (started) {
-                        postSeekBarUpdate();
-                    } else {
-                        mHandler.removeCallbacks(updateSeekBarRunnable);
-                    }
+                    refreshUiAfterMusicUpdate(started);
                     break;
             }
 
         }
 
     };
+
+    private void refreshUiAfterMusicUpdate(boolean started) {
+        mPlayPauseButton.setImageResource(started ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play);
+        if (started) {
+            postSeekBarUpdate();
+        } else {
+            mHandler.removeCallbacks(updateSeekBarRunnable);
+        }
+    }
 }

@@ -25,6 +25,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     public static final String LOG_TAG = PlayerService.class.getSimpleName();
 
+    public static final String ACTION_PLAY = "com.vesko.android.spotifystreamer.ACTION_PLAY";
     public static final String ACTION_PAUSE = "com.vesko.android.spotifystreamer.ACTION_PAUSE";
     public static final String ACTION_RESUME = "com.vesko.android.spotifystreamer.ACTION_RESUME";
     public static final String ACTION_NEXT = "com.vesko.android.spotifystreamer.ACTION_NEXT";
@@ -56,17 +57,21 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         COMPLETED,
     }
 
-    public static void log(String message) {
-        Log.d(LOG_TAG, message);
-    }
-
     public PlayerService() {
         log("constructor");
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        log("onStartCommand(), action: " + intent.getAction());
         switch (intent.getAction()) {
+            case ACTION_PLAY:
+                int songIdx = SpotifyStreamerApp.getApp().getCurrentSongIdx();
+                if (songIdx != -1) {
+                    play(songIdx);
+                }
+                break;
+
             case ACTION_RESUME:
                 resume();
                 break;
@@ -84,23 +89,13 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
                 break;
         }
 
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     @Override
     public IBinder onBind(Intent intent) {
         log("onBind");
         return mBinder;
-    }
-
-    @Override
-    public boolean onUnbind(Intent intent) {
-        log("onUnbind");
-        if (mMediaPlayer != null) {
-            mMediaPlayer.stop();
-            mMediaPlayer.release();
-        }
-        return super.onUnbind(intent);
     }
 
     @Override
@@ -144,7 +139,10 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
         if (songIdx != mCurrentIndex) {
             // Play a new song
-            mMediaPlayer.stop();
+
+            if (mState.equals(STATE.PREPARING) || mState.equals(STATE.PLAYING)) {
+                mMediaPlayer.stop();
+            }
             mMediaPlayer.reset();
 
             changeMediaPlayerSource(songIdx);
@@ -228,19 +226,15 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     private void notifyMusicStatusChanged(boolean started) {
-        sendBroadcast(
-                new Intent(ACTION_MUSIC_STATUS_CHANGED)
-                        .putExtra(Extras.STARTED, started)
-                        .putExtra(Extras.TRACK_IDX, mCurrentIndex));
+        sendBroadcast(new Intent(ACTION_MUSIC_STATUS_CHANGED).putExtra(Extras.STARTED, started));
     }
 
     private void notifyPrepareStarted() {
-        sendBroadcast(
-                new Intent(ACTION_MUSIC_PREPARE_STARTED).putExtra(Extras.TRACK_IDX, mCurrentIndex));
+        sendBroadcast(new Intent(ACTION_MUSIC_PREPARE_STARTED));
     }
 
     private void initMediaPlayer(int songIdx) {
-        log("initMediaPlayer ...");
+        log("initMediaPlayer, songIdx: " + songIdx);
         mMediaPlayer = new MediaPlayer();
         mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mMediaPlayer.setOnPreparedListener(this);
@@ -258,6 +252,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             mNotificationThumb = null;
             mCurrentIndex = index;
             mCurrentSong = song;
+            SpotifyStreamerApp.getApp().setCurrentSongIdx(index);
             mState = STATE.PREPARING;
 
             notifyPrepareStarted();
@@ -268,7 +263,6 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     private void refreshOngoingNotification() {
-
         Intent nextIntent = new Intent(ACTION_NEXT);
         PendingIntent piNext = PendingIntent.getService(
                 getApplicationContext(),
@@ -348,6 +342,10 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             default:
                 return null;
         }
+    }
+
+    private void log(String message) {
+        Log.d(LOG_TAG, message);
     }
 
     public class PlayerBinder extends Binder implements IPlayerCallbacks {

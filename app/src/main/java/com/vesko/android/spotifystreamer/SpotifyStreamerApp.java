@@ -12,6 +12,7 @@ public class SpotifyStreamerApp extends Application {
     private static SpotifyStreamerApp instance;
 
     private ArrayList<Song> mSongs = new ArrayList<>();
+    private int mCurrentSongIdx = -1;
 
     public static SpotifyStreamerApp getApp() {
         if (instance == null) {
@@ -37,5 +38,17 @@ public class SpotifyStreamerApp extends Application {
 
     public Song getSong(int songIdx) {
         return mSongs.get(songIdx);
+    }
+
+    public Song getCurrentSong() {
+        return mSongs.get(mCurrentSongIdx);
+    }
+
+    public int getCurrentSongIdx() {
+        return mCurrentSongIdx;
+    }
+
+    public void setCurrentSongIdx(int mCurrentSong) {
+        this.mCurrentSongIdx = mCurrentSong;
     }
 }

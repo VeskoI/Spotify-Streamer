@@ -5,8 +5,8 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -31,7 +31,6 @@ public class TopTracksFragment extends GenericFragment {
     private static final String PARAM_COUNTRY = "country";
 
     private ListView mList;
-    private SongsAdapter mAdapter;
     private boolean mTwoPane;
 
     public static TopTracksFragment get(String artistId, boolean twoPane) {
@@ -45,6 +44,13 @@ public class TopTracksFragment extends GenericFragment {
 
     public TopTracksFragment() {
         // Required empty public constructor
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -64,6 +70,16 @@ public class TopTracksFragment extends GenericFragment {
         return root;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.action_now_playing:
+                startPlayer();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     private class GetTopTracksAsyncTask extends AsyncTask<String, Void, Tracks> {
 
@@ -94,23 +110,25 @@ public class TopTracksFragment extends GenericFragment {
         // Save the song list globally in the Application
         SpotifyStreamerApp.getApp().setSongs(songs);
 
-        mAdapter = new SongsAdapter(getActivity(), -1, songs);
+        SongsAdapter mAdapter = new SongsAdapter(getActivity(), -1, songs);
         mList.setAdapter(mAdapter);
         mList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if (mTwoPane) {
-                    Log.d("vesko", "twoPane, starting dialogFragment");
-                    PlayerFragment playerFragment = PlayerFragment.get(position);
-                    playerFragment.show(getFragmentManager(), PlayerFragment.TAG);
-                } else {
-                    Log.d("vesko", "standard, calling Activity");
-                    Intent i = new Intent(getActivity(), PlayerActivity.class);
-                    i.putExtra(Extras.SELECTED_TRACK, position);
-                    startActivity(i);
-                }
+                SpotifyStreamerApp.getApp().setCurrentSongIdx(position);
+
+                startPlayer();
             }
         });
+    }
+
+    private void startPlayer() {
+        if (mTwoPane) {
+            PlayerFragment playerFragment = PlayerFragment.get();
+            playerFragment.show(getFragmentManager(), PlayerFragment.TAG);
+        } else {
+            startActivity(new Intent(getActivity(), PlayerActivity.class));
+        }
     }
 
     private ArrayList<Song> extractSongs(Tracks tracks) {

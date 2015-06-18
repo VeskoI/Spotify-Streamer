@@ -2,6 +2,8 @@ package com.vesko.android.spotifystreamer;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.MenuItem;
 
 
 public class MainActivity extends GenericActivity implements SearchFragment.Callback {
@@ -38,4 +40,30 @@ public class MainActivity extends GenericActivity implements SearchFragment.Call
             startActivity(i);
         }
     }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Log.d("vesko", "menu MainActivity");
+        int id = item.getItemId();
+
+        // In case of twoPane, the NowPlaying button will be handled by TopTracksFragment,
+        // which will surely be on the screen, thus we care only about standard layout here.
+        if (id == R.id.action_now_playing && !mTwoPane) {
+            startActivity(new Intent(this, PlayerActivity.class));
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+//    private void startPlayer() {
+//        if (mTwoPane) {
+//            Log.d("vesko", "twoPane, starting dialogFragment");
+//            PlayerFragment playerFragment = PlayerFragment.get();
+//            playerFragment.show(getFragmentManager(), PlayerFragment.TAG);
+//        } else {
+//            Log.d("vesko", "standard, calling Activity");
+//            startActivity(new Intent(getActivity(), PlayerActivity.class));
+//        }
+//    }
 }
