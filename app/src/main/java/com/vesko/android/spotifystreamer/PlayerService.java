@@ -322,8 +322,9 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
             Picasso.with(getApplicationContext()).load(mCurrentSong.getAlbumPic()).into(mThumbPicassoTarget);
         }
 
+        boolean notificaitonOnLockscreen = Utils.lockscreenNotificationEnalbed(getApplicationContext());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            builder.setVisibility(Notification.VISIBILITY_PUBLIC);
+            builder.setVisibility(notificaitonOnLockscreen ? Notification.VISIBILITY_PUBLIC : Notification.VISIBILITY_SECRET);
         }
 
         startForeground(NOTIFICATION_ID, builder.build());

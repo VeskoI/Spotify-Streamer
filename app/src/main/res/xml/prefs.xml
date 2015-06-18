@@ -11,11 +11,11 @@
         android:singleLine="true"
         android:title="@string/pref_country_code_label"/>
 
-    <!--<CheckBoxPreference-->
-        <!--android:defaultValue="@string/pref_enable_notifications_default"-->
-        <!--android:key="@string/pref_enable_notifications_key"-->
-        <!--android:summaryOff="@string/pref_enable_notifications_false"-->
-        <!--android:summaryOn="@string/pref_enable_notifications_true"-->
-        <!--android:title="@string/pref_enable_notifications_label"/>-->
+    <CheckBoxPreference
+        android:defaultValue="@string/pref_enable_lockscreen_controls_default"
+        android:key="@string/pref_enable_lockscreen_controls_key"
+        android:summaryOff="@string/pref_enable_lockscreen_controls_false"
+        android:summaryOn="@string/pref_enable_lockscreen_controls_true"
+        android:title="@string/pref_enable_lockscreen_controls_label"/>
 
 </PreferenceScreen>

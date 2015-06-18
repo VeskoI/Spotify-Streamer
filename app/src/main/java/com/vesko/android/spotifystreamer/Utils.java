@@ -17,4 +17,9 @@ public class Utils {
         return prefs.getString(context.getString(R.string.pref_country_code_key),
                 context.getString(R.string.pref_country_code_default_value));
     }
+
+    public static boolean lockscreenNotificationEnalbed(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getBoolean(context.getString(R.string.pref_enable_lockscreen_controls_key), false);
+    }
 }

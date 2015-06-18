@@ -28,4 +28,9 @@
     <string name="pref_country_code_key" translatable="false">pref_country_code</string>
     <string name="pref_country_code_default_value" translatable="false">US</string>
     <string name="settings">Settings</string>
+    <string name="pref_enable_lockscreen_controls_default">true</string>
+    <string name="pref_enable_lockscreen_controls_key">lockscreen_controls</string>
+    <string name="pref_enable_lockscreen_controls_false">Not Enabled</string>
+    <string name="pref_enable_lockscreen_controls_true">Enabled</string>
+    <string name="pref_enable_lockscreen_controls_label">Media controls on lockscreen</string>
 </resources>

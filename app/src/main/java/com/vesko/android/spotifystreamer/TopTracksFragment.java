@@ -87,7 +87,6 @@ public class TopTracksFragment extends GenericFragment {
         protected Tracks doInBackground(String... params) {
             Map<String, Object> queryParams = new HashMap<>();
             queryParams.put(PARAM_COUNTRY, Utils.getCountryCode(getActivity()));
-            Log.d("vesko", "using countryCode: " + Utils.getCountryCode(getActivity()));
             return spotify.getArtistTopTrack(params[0], queryParams);
         }
 
