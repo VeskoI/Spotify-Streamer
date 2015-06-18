@@ -68,6 +68,11 @@ public class PlayerFragment extends DialogFragment {
         getActivity().startService(
                 new Intent(getActivity(), PlayerService.class).setAction(PlayerService.ACTION_PLAY));
 
+        getActivity().bindService(
+                new Intent(getActivity(), PlayerService.class),
+                serviceConnection,
+                Context.BIND_AUTO_CREATE);
+
         refreshPlayerViews();
 
         IntentFilter intentFilter = new IntentFilter();
@@ -79,23 +84,10 @@ public class PlayerFragment extends DialogFragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-
-        getActivity().bindService(
-                new Intent(getActivity(), PlayerService.class),
-                serviceConnection,
-                Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
     public void onStop() {
         super.onStop();
 
         mHandler.removeCallbacks(updateSeekBarRunnable);
-
-        getActivity().unbindService(serviceConnection);
-        serviceConnection = null;
     }
 
     /**
@@ -194,7 +186,8 @@ public class PlayerFragment extends DialogFragment {
             getActivity().unregisterReceiver(playerBroadcastReceiver);
         } catch (Exception ignored) {}
 
-        // TODO serviceConnection keeps leaking
+        getActivity().unbindService(serviceConnection);
+        serviceConnection = null;
     }
 
     private Runnable updateSeekBarRunnable = new Runnable() {

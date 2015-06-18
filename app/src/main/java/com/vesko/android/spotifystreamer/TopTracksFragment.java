@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,7 +19,6 @@ import com.vesko.android.spotifystreamer.model.Song;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import kaaes.spotify.webapi.android.models.Track;
@@ -86,7 +86,8 @@ public class TopTracksFragment extends GenericFragment {
         @Override
         protected Tracks doInBackground(String... params) {
             Map<String, Object> queryParams = new HashMap<>();
-            queryParams.put(PARAM_COUNTRY, getCountryCode());
+            queryParams.put(PARAM_COUNTRY, Utils.getCountryCode(getActivity()));
+            Log.d("vesko", "using countryCode: " + Utils.getCountryCode(getActivity()));
             return spotify.getArtistTopTrack(params[0], queryParams);
         }
 
@@ -138,12 +139,5 @@ public class TopTracksFragment extends GenericFragment {
             songs.add(s);
         }
         return songs;
-    }
-
-    /**
-     * @return 2-letter (ISO 3166-1 alpha-2) country code based on the current user settings.
-     */
-    private String getCountryCode() {
-        return Locale.getDefault().getCountry();
     }
 }
