@@ -16,4 +16,8 @@
         <item name="android:height">56dp</item>
     </style>
 
+    <style name="ArtistsListStyle">
+        <!-- Just a stub, will be overwritten for bigger screens -->
+    </style>
+
 </resources>

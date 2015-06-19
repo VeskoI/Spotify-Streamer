@@ -1,0 +1,6 @@
+<resources>
+
+    <style name="ArtistsListStyle">
+        <item name="android:choiceMode">singleChoice</item>
+    </style>
+</resources>
