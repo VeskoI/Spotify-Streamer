@@ -80,6 +80,7 @@ public class SearchFragment extends GenericFragment {
             }
         });
 
+        // Used for convenience while developing. Won't affect our "release".
         if (BuildConfig.DEBUG) {
             searchForArtist("dre");
         }

@@ -20,7 +20,7 @@ public class SettingsActivity extends PreferenceActivity implements Preference.O
     @Override
     public boolean onPreferenceChange(Preference preference, Object value) {
         String stringValue = value.toString();
-        // TODO validate countryCode preference value
+        // TODO validate countryCode preference value - should be a 2-digit country code accepted by Spotify.
         preference.setSummary(stringValue);
         return true;
     }
