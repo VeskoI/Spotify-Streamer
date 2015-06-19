@@ -13,7 +13,12 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -50,7 +55,14 @@ public class PlayerFragment extends DialogFragment {
     private static final long ONE_SECOND = 1000;
 
     private Handler mHandler = new Handler();
+    private ShareActionProvider mShareActionProvider;
     private PlayerService.IPlayerCallbacks mService;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
 
     @Nullable
     @Override
@@ -84,6 +96,16 @@ public class PlayerFragment extends DialogFragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        if (mService != null && mService.isPlaying()) {
+            // Someone, somewhere has already started music ... make sure that our UI is up-to-date
+            refreshUiAfterMusicUpdate(true);
+        }
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
 
@@ -99,6 +121,33 @@ public class PlayerFragment extends DialogFragment {
         Dialog dialog = super.onCreateDialog(savedInstanceState);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         return dialog;
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.menu_player, menu);
+
+        MenuItem shareItem = menu.findItem(R.id.action_share);
+
+        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(shareItem);
+        refreshShareIntent();
+    }
+
+    private void refreshShareIntent() {
+        if (mShareActionProvider != null) {
+            mShareActionProvider.setShareIntent(getShareIntent());
+        }
+    }
+
+    private Intent getShareIntent() {
+        Song currentSong = SpotifyStreamerApp.getApp().getCurrentSong();
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, currentSong.getName());
+        shareIntent.putExtra(Intent.EXTRA_TEXT, currentSong.getPreviewUrl());
+        return shareIntent;
     }
 
     private void refreshPlayerViews() {
@@ -218,6 +267,7 @@ public class PlayerFragment extends DialogFragment {
         @Override
         public void onReceive(Context context, Intent intent) {
             refreshPlayerViews();
+            refreshShareIntent();
 
             boolean started = intent.getBooleanExtra(Extras.STARTED, false);
 

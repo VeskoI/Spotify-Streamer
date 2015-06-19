@@ -33,4 +33,5 @@
     <string name="pref_enable_lockscreen_controls_false">Not Enabled</string>
     <string name="pref_enable_lockscreen_controls_true">Enabled</string>
     <string name="pref_enable_lockscreen_controls_label">Media controls on lockscreen</string>
+    <string name="action_share">Share</string>
 </resources>
